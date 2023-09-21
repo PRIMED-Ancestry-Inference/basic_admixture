@@ -82,14 +82,14 @@ task ThinVariants {
     /plink2 --bfile input \
     --thin-count ~{thin_count} \
     --make-bed \
-    --out ~{basename}.thined
+    --out ~{basename}.thinned
 
   >>>
 
   output {
-    File thinned_bed = "~{basename}.thined.bed"
-    File thinned_bim = "~{basename}.thined.bim"
-    File thinned_fam = "~{basename}.thined.fam"
+    File thinned_bed = "~{basename}.thinned.bed"
+    File thinned_bim = "~{basename}.thinned.bim"
+    File thinned_fam = "~{basename}.thinned.fam"
   }
 
   runtime {
