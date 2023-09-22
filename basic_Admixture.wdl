@@ -70,9 +70,9 @@ task Admixture_t {
     File bed
     File bim
     File fam
+    File? ref_pop
     Int n_ancestral_populations
     Boolean cv = false
-    Boolean supervised = false
     Int mem = 16
     Int n_cpus = 4
   }
@@ -81,8 +81,9 @@ task Admixture_t {
   String basename = basename(bed, ".bed")
 
   command <<<
-
-    /admixture_linux-1.3.0/admixture ~{if (cv) then "--cv" else ""} ~{if (supervised) then "--supervised" else ""} ~{bed} ~{n_ancestral_populations} -j~{n_cpus}
+    /admixture_linux-1.3.0/admixture ~{if (cv) then "--cv" else ""} \
+      ~{bed} ~{n_ancestral_populations} ~{if defined(ref_pop) then "--supervised ~{ref_pop}" else ""} \
+      -j~{n_cpus}
   >>>
 
   runtime {
