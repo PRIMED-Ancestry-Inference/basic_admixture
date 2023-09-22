@@ -1,29 +1,61 @@
 version 1.0
 
+import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/optional_steps/create_pca_projection.wdl" as tasks
+
 workflow basic_admixture {
   input {
     File bed
     File bim
     File fam
     Int n_ancestral_populations
-    Int? thin_count
+    Boolean remove_relateds = true
+    Float? max_kinship_coefficient
+    Boolean prune_variants = true
+		Int? window_size
+		Int? shift_size
+		Int? r2_threshold
   }
 
-  if(defined(thin_count)) {
-    call ThinVariants {
+  if (remove_relateds) {
+    call tasks.removeRelateds {
       input:
         bed = bed,
         bim = bim,
         fam = fam,
-        thin_count = select_first([thin_count])
+        max_kinship_coefficient = max_kinship_coefficient
     }
   }
 
+  if (prune_variants) {
+    call tasks.pruneVars {
+      input:
+        bed = select_first([removeRelateds.out_bed, bed]),
+        bim = select_first([removeRelateds.out_bim, fam]),
+        fam = select_first([removeRelateds.out_fam, fam]),
+        window_size = window_size,
+        shift_size = shift_size,
+        r2_threshold = r2_threshold
+    }
+  }
+
+  # if(defined(thin_count)) {
+  #   call ThinVariants {
+  #     input:
+  #       bed = bed,
+  #       bim = bim,
+  #       fam = fam,
+  #       thin_count = select_first([thin_count])
+  #   }
+  # }
+
   call Admixture_t {
     input:
-      bed = select_first([ThinVariants.thinned_bed, bed]),
-      bim = select_first([ThinVariants.thinned_bim, bim]),
-      fam = select_first([ThinVariants.thinned_fam, fam]),
+      #bed = select_first([ThinVariants.thinned_bed, bed]),
+      #bim = select_first([ThinVariants.thinned_bim, bim]),
+      #fam = select_first([ThinVariants.thinned_fam, fam]),
+      bed = select_first([pruneVars.out_bed, removeRelateds.out_bed, bed]),
+      bim = select_first([pruneVars.out_bim, removeRelateds.out_bim, bim]),
+      fam = select_first([pruneVars.out_fam, removeRelateds.out_fam, fam]),
       n_ancestral_populations = n_ancestral_populations
   }
 
