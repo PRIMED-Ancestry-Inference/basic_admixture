@@ -59,6 +59,10 @@ workflow basic_admixture {
       n_ancestral_populations = n_ancestral_populations
   }
 
+  output {
+    File ancestry_fractions = Admixture_t.ancestry_fractions
+    File allele_frequencies = Admixture_t.allele_frequencies
+  }
 }
 
 task Admixture_t {
