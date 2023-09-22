@@ -7,7 +7,9 @@ workflow basic_admixture {
     File bed
     File bim
     File fam
+    File? ref_pop
     Int n_ancestral_populations
+    Boolean cross_validation = false
     Boolean remove_relateds = true
     Float? max_kinship_coefficient
     Boolean prune_variants = true
@@ -72,7 +74,7 @@ task Admixture_t {
     File fam
     File? ref_pop
     Int n_ancestral_populations
-    Boolean cv = false
+    Boolean cross_validation = false
     Int mem = 16
     Int n_cpus = 4
   }
@@ -81,7 +83,7 @@ task Admixture_t {
   String basename = basename(bed, ".bed")
 
   command <<<
-    /admixture_linux-1.3.0/admixture ~{if (cv) then "--cv" else ""} \
+    /admixture_linux-1.3.0/admixture ~{if (cross_validation) then "--cv" else ""} \
       ~{bed} ~{n_ancestral_populations} ~{if defined(ref_pop) then "--supervised ~{ref_pop}" else ""} \
       -j~{n_cpus}
   >>>
