@@ -58,7 +58,8 @@ workflow basic_admixture {
       bed = select_first([pruneVars.out_bed, removeRelateds.out_bed, bed]),
       bim = select_first([pruneVars.out_bim, removeRelateds.out_bim, bim]),
       fam = select_first([pruneVars.out_fam, removeRelateds.out_fam, fam]),
-      n_ancestral_populations = n_ancestral_populations
+      n_ancestral_populations = n_ancestral_populations,
+      cross_validation = cross_validation
   }
 
   output {
