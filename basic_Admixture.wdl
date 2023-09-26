@@ -58,6 +58,7 @@ workflow basic_admixture {
       bed = select_first([pruneVars.out_bed, removeRelateds.out_bed, bed]),
       bim = select_first([pruneVars.out_bim, removeRelateds.out_bim, bim]),
       fam = select_first([pruneVars.out_fam, removeRelateds.out_fam, fam]),
+      ref_pop = ref_pop,
       n_ancestral_populations = n_ancestral_populations,
       cross_validation = cross_validation
   }
@@ -84,7 +85,7 @@ task Admixture_t {
   String basename = basename(bed, ".bed")
 
   command <<<
-    /admixture_linux-1.3.0/admixture ~{if (cross_validation) then "--cv" else ""} \
+    /admixture_linux-1.3.0/admixture ~{if cross_validation then "--cv" else ""} \
       ~{bed} ~{n_ancestral_populations} ~{if defined(ref_pop) then "--supervised ~{ref_pop}" else ""} \
       -j~{n_cpus}
   >>>
