@@ -1,6 +1,6 @@
 version 1.0
 
-import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/optional_steps/create_pca_projection.wdl" as tasks
+import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/create_pca_projection.wdl" as tasks
 
 workflow basic_admixture {
   input {
