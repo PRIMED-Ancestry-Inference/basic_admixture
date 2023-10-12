@@ -10,7 +10,7 @@ task admixReady {
 		Int mem_gb = 8
 	}
 
-	Float disk_size = ceil(1.5*(size(bed, "GB") + size(bim, "GB") + size(fam, "GB"))) * 1.5	#hoping this works?
+	#Int disk_size = ceil(1.5*(size(bed, "GB") + size(bim, "GB") + size(fam, "GB"))) * 1.5	#hoping this works?
 	String basename = basename(bed, ".bed")
 	
 	command <<<
@@ -81,17 +81,17 @@ task run_admixture_projected {
     	Int k
     	Int? seed
     	Boolean cv=false
-    	String mem_gb = "16" #https://github.com/openwdl/wdl/pull/464
+    	Int mem_gb = 16 #https://github.com/openwdl/wdl/pull/464
     	Int n_cpus = 4
   	}
 
-	Int disk_size = ceil(1.5*(size(bed, "GB") + size(bim, "GB") + size(fam, "GB")))
+	#Int disk_size = ceil(1.5*(size(bed, "GB") + size(bim, "GB") + size(fam, "GB")))
 	String basename = basename(bed, ".bed")
 	#ln --symbolic ${P} ${basename}.${k}.P.in
 
 	command <<<
 		ln --symbolic ~{P} ~{basename}.~{k}.P.in
-		command="/admixture_linux-1.3.0/admixture ~{if (cv) then "--cv" else ""} ~{if defined(seed) then "-s ~{seed}" else "-s time"} -j~{n_cpus} -P ~{bed} ~{k}"
+		command='/admixture_linux-1.3.0/admixture ~{if (cv) then "--cv" else ""} ~{if defined(seed) then "-s ~{seed}" else "-s time"} -j~{n_cpus} -P ~{bed} ~{k}'
 		printf "${command}\n"
 		${command} | tee ~{basename}_projection.~{k}.log
 		#/admixture_linux-1.3.0/admixture ~{if (cv) then "--cv" else ""} ~{if defined(seed) then "-s ~{seed}" else "-s time"} -j~{n_cpus} -P ~{bed} ~{k} | tee ~{basename}_projection.~{k}.log
@@ -118,7 +118,7 @@ workflow projected_admixture {
 		File bed
 		File bim
 		File fam
-		String? mem_gb
+		Int? mem_gb
 		Int? seed # https://wdl-docs.readthedocs.io/en/latest/WDL/different_parameters/
 		Int? n_cpus
 		Boolean? cv
@@ -130,7 +130,8 @@ workflow projected_admixture {
 			ref_bim = ref_bim, 
 			bed = bed, 
 			bim = bim, 
-			fam = fam
+			fam = fam,
+			mem_gb = mem_gb
 	}
 	
 	call summary{
@@ -155,7 +156,7 @@ workflow projected_admixture {
 	meta {
     author: "Jonathan Shortt"
     email: "jonathan.shortt@cuanschutz.edu"
-    description: "## run_projection_admixture\n This workflow is used to project a genetic test dataset (in plink format, i.e., .bed/.bim/.fam) into clusters (\"ancestral populations\") using ADMIXTURE. First, the cluster file (.P produced by ADMIXTURE) and the test dataset are both subset to contain the same set of variants (Note: this workflow assumes that variants from both the .P and test dataset have been previously harmonized such that variants follow the same naming convention, alleles at each site are ordered identically, and variants are sorted). Thenthe test dataset is projected into the clusters determined by the .P."
+    description: "This workflow is used to project a genetic test dataset (in plink format, i.e., .bed/.bim/.fam) into clusters (\"ancestral populations\") using ADMIXTURE. First, the cluster file (.P produced by ADMIXTURE) and the test dataset are both subset to contain the same set of variants (Note: this workflow assumes that variants from both the .P and test dataset have been previously harmonized such that variants follow the same naming convention, alleles at each site are ordered identically, and variants are sorted). Then the test dataset is projected into the clusters determined by the .P."
 	}
 
 }
