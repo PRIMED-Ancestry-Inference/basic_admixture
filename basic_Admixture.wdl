@@ -32,7 +32,7 @@ workflow basic_admixture {
     call tasks.pruneVars {
       input:
         bed = select_first([removeRelateds.out_bed, bed]),
-        bim = select_first([removeRelateds.out_bim, fam]),
+        bim = select_first([removeRelateds.out_bim, bim]),
         fam = select_first([removeRelateds.out_fam, fam]),
         window_size = window_size,
         shift_size = shift_size,
