@@ -85,10 +85,10 @@ task Admixture_t {
   String basename = basename(bed, ".bed")
 
   command <<<
-    ln -s ~{bed} basename.bed
-    ln -s ~{bim} basename.bim
-    ln -s ~{fam} basename.fam
-    if [ -f ~{pop} ]; then ln -s ~{pop} basename.pop; fi
+    ln -s ~{bed} ~{basename}.bed
+    ln -s ~{bim} ~{basename}.bim
+    ln -s ~{fam} ~{basename}.fam
+    if [ -f ~{pop} ]; then ln -s ~{pop} ~{basename}.pop; fi
     /admixture_linux-1.3.0/admixture ~{if cross_validation then "--cv" else ""} \
       ~{basename}.bed ~{n_ancestral_populations} ~{if defined(pop) then "--supervised" else ""} \
       -j~{n_cpus}
