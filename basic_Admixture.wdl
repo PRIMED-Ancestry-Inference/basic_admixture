@@ -66,6 +66,7 @@ workflow basic_admixture {
   output {
     File ancestry_fractions = Admixture_t.ancestry_fractions
     File allele_frequencies = Admixture_t.allele_frequencies
+    File reference_variants = select_first([pruneVars.out_bim, removeRelateds.out_bim, bim])
   }
 }
 
