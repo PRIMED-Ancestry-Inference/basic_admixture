@@ -1,5 +1,55 @@
 version 1.0
 
+workflow projected_admixture {
+	input{
+		File P
+		File ref_bim
+		File bed
+		File bim
+		File fam
+		Int? mem_gb
+		Int? seed # https://wdl-docs.readthedocs.io/en/latest/WDL/different_parameters/
+		Int? n_cpus
+		Boolean? cv
+	}
+	
+	call admixReady {
+		input:
+			P = P, 
+			ref_bim = ref_bim, 
+			bed = bed, 
+			bim = bim, 
+			fam = fam,
+			mem_gb = mem_gb
+	}
+	
+	call summary{
+		input:
+			P = P,
+			snps = admixReady.snps_to_keep
+	}
+	
+	call run_admixture_projected {
+		input:
+			bed = admixReady.subset_bed,
+    			bim = admixReady.subset_bim,
+    			fam = admixReady.subset_fam,
+    			P = admixReady.subset_P,
+    			k = summary.k,
+    			seed = seed,
+    			cv = cv,
+    			mem_gb = mem_gb,
+    			n_cpus = n_cpus
+	}
+	
+	meta {
+    author: "Jonathan Shortt"
+    email: "jonathan.shortt@cuanschutz.edu"
+    description: "This workflow is used to project a genetic test dataset (in plink format, i.e., .bed/.bim/.fam) into clusters (\"ancestral populations\") using ADMIXTURE. First, the cluster file (.P produced by ADMIXTURE) and the test dataset are both subset to contain the same set of variants (Note: this workflow assumes that variants from both the .P and test dataset have been previously harmonized such that variants follow the same naming convention, alleles at each site are ordered identically, and variants are sorted). Then the test dataset is projected into the clusters determined by the .P."
+	}
+
+}
+
 task admixReady {
 	input{
 		File P
@@ -109,54 +159,4 @@ task run_admixture_projected {
 		File allele_frequencies = "~{basename}.~{k}.P"
 		File admixture_log = "~{basename}_projection.~{k}.log"
 	}
-}
-
-workflow projected_admixture {
-	input{
-		File P
-		File ref_bim
-		File bed
-		File bim
-		File fam
-		Int? mem_gb
-		Int? seed # https://wdl-docs.readthedocs.io/en/latest/WDL/different_parameters/
-		Int? n_cpus
-		Boolean? cv
-	}
-	
-	call admixReady {
-		input:
-			P = P, 
-			ref_bim = ref_bim, 
-			bed = bed, 
-			bim = bim, 
-			fam = fam,
-			mem_gb = mem_gb
-	}
-	
-	call summary{
-		input:
-			P = P,
-			snps = admixReady.snps_to_keep
-	}
-	
-	call run_admixture_projected {
-		input:
-			bed = admixReady.subset_bed,
-    			bim = admixReady.subset_bim,
-    			fam = admixReady.subset_fam,
-    			P = admixReady.subset_P,
-    			k = summary.k,
-    			seed = seed,
-    			cv = cv,
-    			mem_gb = mem_gb,
-    			n_cpus = n_cpus
-	}
-	
-	meta {
-    author: "Jonathan Shortt"
-    email: "jonathan.shortt@cuanschutz.edu"
-    description: "This workflow is used to project a genetic test dataset (in plink format, i.e., .bed/.bim/.fam) into clusters (\"ancestral populations\") using ADMIXTURE. First, the cluster file (.P produced by ADMIXTURE) and the test dataset are both subset to contain the same set of variants (Note: this workflow assumes that variants from both the .P and test dataset have been previously harmonized such that variants follow the same naming convention, alleles at each site are ordered identically, and variants are sorted). Then the test dataset is projected into the clusters determined by the .P."
-	}
-
 }
