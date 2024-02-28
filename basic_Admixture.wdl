@@ -1,7 +1,7 @@
 version 1.0
 
 import "https://raw.githubusercontent.com/UW-GAC/primed-file-conversion/main/plink2_vcf2pgen.wdl" as vcf_conversion
-import "https://raw.githubusercontent.com/UW-GAC/primed-file-conversion/pgen2bed/plink2_pgen2bed.wdl" as pgen_conversion
+import "https://raw.githubusercontent.com/UW-GAC/primed-file-conversion/main/plink2_pgen2bed.wdl" as pgen_conversion
 import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/vcf_input/create_pca_projection.wdl" as subset_tasks
 import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/vcf_input/projected_pca.wdl" as file_tasks
 
@@ -76,12 +76,21 @@ workflow basic_admixture {
       psam = final_psam
   }
 
+  if (defined(pop)) {
+    call subset_pop {
+      input:
+        fam = pgen2bed.out_fam,
+        pop = select_first([pop])
+    }
+  }
+  File? this_pop = if (defined(pop)) then subset_pop.out_pop else pop
+
   call Admixture_t {
     input:
       bed = pgen2bed.out_bed,
       bim = pgen2bed.out_bim,
       fam = pgen2bed.out_fam,
-      pop = pop,
+      pop = this_pop,
       n_ancestral_populations = n_ancestral_populations,
       cross_validation = cross_validation
   }
@@ -90,6 +99,35 @@ workflow basic_admixture {
     File ancestry_fractions = Admixture_t.ancestry_fractions
     File allele_frequencies = Admixture_t.allele_frequencies
     File reference_variants = pgen2bed.out_bim
+  }
+}
+
+
+task subset_pop {
+  input{
+    File fam
+    File pop # two columns: ID pop
+  }
+
+  String outfile = basename(fam) + ".pop"
+
+  command <<<
+    Rscript -e "\
+      library(readr); \
+      library(dplyr); \
+      fam <- read_delim('~{fam}', col_types='-c----', col_names='id')
+      dat <- read_delim('~{pop}', col_names=c('id', 'pop'))
+      dat <- left_join(fam, dat)
+      writeLines(dat[['pop']], outfile)
+    "
+  >>>
+
+  output {
+    File out_pop = outfile
+  }
+
+  runtime {
+    docker: "us.gcr.io/broad-dsp-gcr-public/anvil-rstudio-bioconductor:3.16.0"
   }
 }
 
