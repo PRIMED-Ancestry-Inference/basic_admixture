@@ -115,10 +115,11 @@ task subset_pop {
     Rscript -e "\
       library(readr); \
       library(dplyr); \
-      fam <- read_delim('~{fam}', col_types='-c----', col_names='id')
-      dat <- read_delim('~{pop}', col_names=c('id', 'pop'))
-      dat <- left_join(fam, dat)
-      writeLines(dat[['pop']], '~{outfile}')
+      fam <- read_delim('~{fam}', col_types='-c----', col_names='id'); \
+      dat <- read_delim('~{pop}', col_names=c('id', 'pop')); \
+      dat <- left_join(fam, dat); \
+      dat <- mutate(dat, pop=ifelse(is.na(pop), '-', pop)); \
+      writeLines(dat[['pop']], '~{outfile}'); \
     "
   >>>
 
