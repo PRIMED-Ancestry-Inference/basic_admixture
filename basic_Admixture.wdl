@@ -118,7 +118,7 @@ task subset_pop {
       fam <- read_delim('~{fam}', col_types='-c----', col_names='id')
       dat <- read_delim('~{pop}', col_names=c('id', 'pop'))
       dat <- left_join(fam, dat)
-      writeLines(dat[['pop']], outfile)
+      writeLines(dat[['pop']], '~{outfile}')
     "
   >>>
 
