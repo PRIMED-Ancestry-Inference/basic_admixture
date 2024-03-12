@@ -1,64 +1,96 @@
 version 1.0
 
-import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/create_pca_projection.wdl" as tasks
+import "https://raw.githubusercontent.com/UW-GAC/primed-file-conversion/main/plink2_vcf2pgen.wdl" as vcf_conversion
+import "https://raw.githubusercontent.com/UW-GAC/primed-file-conversion/main/plink2_pgen2bed.wdl" as pgen_conversion
+import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/vcf_input/create_pca_projection.wdl" as subset_tasks
+import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/vcf_input/projected_pca.wdl" as file_tasks
 
 workflow basic_admixture {
   input {
-    File bed
-    File bim
-    File fam
+    Array[File] vcf
     File? pop
     Int n_ancestral_populations
     Boolean cross_validation = false
+    Boolean prune_variants = true
     Boolean remove_relateds = true
     Float? max_kinship_coefficient
-    Boolean prune_variants = true
 		Int? window_size
 		Int? shift_size
 		Int? r2_threshold
   }
 
-  if (remove_relateds) {
-    call tasks.removeRelateds {
-      input:
-        bed = bed,
-        bim = bim,
-        fam = fam,
-        max_kinship_coefficient = max_kinship_coefficient
-    }
+	scatter (file in vcf) {
+		call vcf_conversion.vcf2pgen {
+			input:
+				vcf_file = file
+		}
+
+		if (prune_variants) {
+			call subset_tasks.pruneVars {
+				input:
+					pgen = vcf2pgen.out_pgen,
+					pvar = vcf2pgen.out_pvar,
+					psam = vcf2pgen.out_psam,
+					window_size = window_size,
+					shift_size = shift_size,
+					r2_threshold = r2_threshold
+			}
+		}
+
+		File subset_pgen = select_first([pruneVars.out_pgen, vcf2pgen.out_pgen])
+		File subset_pvar = select_first([pruneVars.out_pvar, vcf2pgen.out_pvar])
+		File subset_psam = select_first([pruneVars.out_psam, vcf2pgen.out_psam])
+	}
+
+	if (length(vcf) > 1) {
+		call file_tasks.mergeFiles {
+			input:
+				pgen = subset_pgen,
+				pvar = subset_pvar,
+				psam = subset_psam
+		}
+	}
+
+	File merged_pgen = select_first([mergeFiles.out_pgen, pruneVars.out_pgen[0], vcf2pgen.out_pgen[0]])
+	File merged_pvar = select_first([mergeFiles.out_pvar, pruneVars.out_pvar[0], vcf2pgen.out_pvar[0]])
+	File merged_psam = select_first([mergeFiles.out_psam, pruneVars.out_psam[0], vcf2pgen.out_psam[0]])
+
+  	if (remove_relateds) {
+		call subset_tasks.removeRelateds {
+			input:
+				pgen = merged_pgen,
+				pvar = merged_pvar,
+				psam = merged_psam,
+				max_kinship_coefficient = max_kinship_coefficient
+		}
+	}
+
+	File final_pgen = select_first([removeRelateds.out_pgen, merged_pgen])
+	File final_pvar = select_first([removeRelateds.out_pvar, merged_pvar])
+	File final_psam = select_first([removeRelateds.out_psam, merged_psam])
+
+  call pgen_conversion.pgen2bed {
+    input:
+      pgen = final_pgen,
+      pvar = final_pvar,
+      psam = final_psam
   }
 
-  if (prune_variants) {
-    call tasks.pruneVars {
+  if (defined(pop)) {
+    call subset_pop {
       input:
-        bed = select_first([removeRelateds.out_bed, bed]),
-        bim = select_first([removeRelateds.out_bim, bim]),
-        fam = select_first([removeRelateds.out_fam, fam]),
-        window_size = window_size,
-        shift_size = shift_size,
-        r2_threshold = r2_threshold
+        fam = pgen2bed.out_fam,
+        pop = select_first([pop])
     }
   }
-
-  # if(defined(thin_count)) {
-  #   call ThinVariants {
-  #     input:
-  #       bed = bed,
-  #       bim = bim,
-  #       fam = fam,
-  #       thin_count = select_first([thin_count])
-  #   }
-  # }
+  File? this_pop = if (defined(pop)) then subset_pop.out_pop else pop
 
   call Admixture_t {
     input:
-      #bed = select_first([ThinVariants.thinned_bed, bed]),
-      #bim = select_first([ThinVariants.thinned_bim, bim]),
-      #fam = select_first([ThinVariants.thinned_fam, fam]),
-      bed = select_first([pruneVars.out_bed, removeRelateds.out_bed, bed]),
-      bim = select_first([pruneVars.out_bim, removeRelateds.out_bim, bim]),
-      fam = select_first([pruneVars.out_fam, removeRelateds.out_fam, fam]),
-      pop = pop,
+      bed = pgen2bed.out_bed,
+      bim = pgen2bed.out_bim,
+      fam = pgen2bed.out_fam,
+      pop = this_pop,
       n_ancestral_populations = n_ancestral_populations,
       cross_validation = cross_validation
   }
@@ -66,9 +98,40 @@ workflow basic_admixture {
   output {
     File ancestry_fractions = Admixture_t.ancestry_fractions
     File allele_frequencies = Admixture_t.allele_frequencies
-    File reference_variants = select_first([pruneVars.out_bim, removeRelateds.out_bim, bim])
+    File reference_variants = pgen2bed.out_bim
   }
 }
+
+
+task subset_pop {
+  input{
+    File fam
+    File pop # two columns: ID pop
+  }
+
+  String outfile = basename(fam) + ".pop"
+
+  command <<<
+    Rscript -e "\
+      library(readr); \
+      library(dplyr); \
+      fam <- read_delim('~{fam}', col_types='-c----', col_names='id'); \
+      dat <- read_delim('~{pop}', col_names=c('id', 'pop')); \
+      dat <- left_join(fam, dat); \
+      dat <- mutate(dat, pop=ifelse(is.na(pop), '-', pop)); \
+      writeLines(dat[['pop']], '~{outfile}'); \
+    "
+  >>>
+
+  output {
+    File out_pop = outfile
+  }
+
+  runtime {
+    docker: "us.gcr.io/broad-dsp-gcr-public/anvil-rstudio-bioconductor:3.16.0"
+  }
+}
+
 
 task Admixture_t {
   input {
@@ -97,7 +160,7 @@ task Admixture_t {
 
   runtime {
     docker: "us.gcr.io/broad-dsde-methods/admixture_docker:v1.0.0"
-    disks: "local-disk " + disk_size + " HDD"
+		disks: "local-disk " + disk_size + " SSD"
     memory: mem + " GB"
     cpu: n_cpus
   }
@@ -105,42 +168,5 @@ task Admixture_t {
   output {
     File ancestry_fractions = "~{basename}.~{n_ancestral_populations}.Q"
     File allele_frequencies = "~{basename}.~{n_ancestral_populations}.P"
-  }
-}
-
-task ThinVariants {
-  input {
-    File bed
-    File bim
-    File fam
-    Int thin_count
-    Int mem = 8
-  }
-
-  Int disk_size = ceil(1.5*(size(bed, "GB") + size(bim, "GB") + size(fam, "GB")))
-  String basename = basename(bed, ".bed")
-
-  command <<<
-    ln -s ~{bim} input.bim
-    ln -s ~{bed} input.bed
-    ln -s ~{fam} input.fam
-
-    /plink2 --bfile input \
-    --thin-count ~{thin_count} \
-    --make-bed \
-    --out ~{basename}.thinned
-
-  >>>
-
-  output {
-    File thinned_bed = "~{basename}.thinned.bed"
-    File thinned_bim = "~{basename}.thinned.bim"
-    File thinned_fam = "~{basename}.thinned.fam"
-  }
-
-  runtime {
-    docker: "us.gcr.io/broad-dsde-methods/plink2_docker@sha256:4455bf22ada6769ef00ed0509b278130ed98b6172c91de69b5bc2045a60de124"
-    disks: "local-disk " + disk_size + " HDD"
-    memory: mem + " GB"
   }
 }
