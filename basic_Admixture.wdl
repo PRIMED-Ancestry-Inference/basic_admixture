@@ -98,7 +98,7 @@ workflow basic_admixture {
   output {
     File ancestry_fractions = Admixture_t.ancestry_fractions
     File allele_frequencies = Admixture_t.allele_frequencies
-    File reference_variants = pgen2bed.out_bim
+    File reference_variants = final_pvar
   }
 }
 
