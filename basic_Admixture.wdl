@@ -139,6 +139,7 @@ task Admixture_t {
     File bim
     File fam
     File? pop
+    File? P # include this for use with projected_admixture
     Int n_ancestral_populations
     Boolean cross_validation = false
     Int mem = 16
@@ -153,7 +154,8 @@ task Admixture_t {
     ln -s ~{bim} ~{basename}.bim
     ln -s ~{fam} ~{basename}.fam
     if [ -f ~{pop} ]; then ln -s ~{pop} ~{basename}.pop; fi
-    /admixture_linux-1.3.0/admixture ~{if cross_validation then "--cv" else ""} \
+    if [ -f ~{P} ]; then ln -s ~{P} ~{basename}.~{n_ancestral_populations}.P.in fi
+    /admixture_linux-1.3.0/admixture ~{if defined(P) then "-P" else ""} ~{if cross_validation then "--cv" else ""} \
       ~{basename}.bed ~{n_ancestral_populations} ~{if defined(pop) then "--supervised" else ""} \
       -j~{n_cpus}
   >>>

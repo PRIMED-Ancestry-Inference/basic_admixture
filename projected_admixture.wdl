@@ -3,6 +3,7 @@ version 1.0
 import "https://raw.githubusercontent.com/UW-GAC/primed-file-conversion/main/plink2_pgen2bed.wdl" as pgen_conversion
 import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/create_pca_projection.wdl" as tasks
 import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/projected_pca.wdl" as file_tasks
+import "basic_Admixture.wdl" as admixture
 
 workflow projected_admixture {
 	input{
@@ -10,7 +11,7 @@ workflow projected_admixture {
 		File ref_variants
     	Array[File] vcf
 		Int? seed # https://wdl-docs.readthedocs.io/en/latest/WDL/different_parameters/
-		Boolean? cv
+    	Boolean cross_validation = false
 	}
 	
 	call tasks.identifyColumns {
@@ -61,21 +62,20 @@ workflow projected_admixture {
 			snps = admixReady.snps
 	}
 	
-	call run_admixture_projected {
+	call admixture.Admixture_t {
 		input:
 			bed = pgen2bed.out_bed,
 			bim = pgen2bed.out_bim,
 			fam = pgen2bed.out_fam,
 			P = admixReady.subset_P,
-			k = summary.k,
-			seed = seed,
-			cv = cv
+			n_ancestral_populations = summary.k,
+			cross_validation = cross_validation
 	}
 	
 	meta {
     author: "Jonathan Shortt"
     email: "jonathan.shortt@cuanschutz.edu"
-    description: "This workflow is used to project a genetic test dataset (in plink format, i.e., .bed/.bim/.fam) into clusters (\"ancestral populations\") using ADMIXTURE. First, the cluster file (.P produced by ADMIXTURE) and the test dataset are both subset to contain the same set of variants (Note: this workflow assumes that variants from both the .P and test dataset have been previously harmonized such that variants follow the same naming convention, alleles at each site are ordered identically, and variants are sorted). Then the test dataset is projected into the clusters determined by the .P."
+    description: "This workflow is used to project a genetic test dataset (in VCF format) into clusters (\"ancestral populations\") using ADMIXTURE. First, the cluster file (.P produced by ADMIXTURE) and the test dataset are both subset to contain the same set of variants (Note: this workflow assumes that variants from both the .P and test dataset have been previously harmonized such that variants follow the same naming convention, alleles at each site are ordered identically, and variants are sorted). Then the test dataset is projected into the clusters determined by the .P."
 	}
 
 }
@@ -134,44 +134,5 @@ task summary {
 	
 	runtime{
 		docker: "us.gcr.io/broad-dsde-methods/plink2_docker@sha256:4455bf22ada6769ef00ed0509b278130ed98b6172c91de69b5bc2045a60de124"
-	}
-}
-
-task run_admixture_projected {
-	input {
-    	File bed
-    	File bim
-    	File fam
-    	File P
-    	Int k
-    	Int? seed
-    	Boolean cv=false
-    	Int mem_gb = 16 #https://github.com/openwdl/wdl/pull/464
-    	Int n_cpus = 4
-  	}
-
-    Int disk_size = ceil(1.5*(size(bed, "GB") + size(bim, "GB") + size(fam, "GB")))
-	String basename = basename(bed, ".bed")
-	#ln --symbolic ${P} ${basename}.${k}.P.in
-
-	command <<<
-		ln --symbolic ~{P} ~{basename}.~{k}.P.in
-		command='/admixture_linux-1.3.0/admixture ~{if (cv) then "--cv" else ""} ~{if defined(seed) then "-s ~{seed}" else "-s time"} -j~{n_cpus} -P ~{bed} ~{k}'
-		printf "${command}\n"
-		${command} | tee ~{basename}_projection.~{k}.log
-		#/admixture_linux-1.3.0/admixture ~{if (cv) then "--cv" else ""} ~{if defined(seed) then "-s ~{seed}" else "-s time"} -j~{n_cpus} -P ~{bed} ~{k} | tee ~{basename}_projection.~{k}.log
-	>>>
-
-	runtime {
-		docker: "us.gcr.io/broad-dsde-methods/admixture_docker:v1.0.0"
-		disks: "local-disk " + disk_size + " SSD"
-		memory: mem_gb + " GB"
-		cpu: n_cpus
-  	}
-
-	output {
-		File ancestry_fractions = "~{basename}.~{k}.Q"
-		File allele_frequencies = "~{basename}.~{k}.P"
-		File admixture_log = "~{basename}_projection.~{k}.log"
 	}
 }
