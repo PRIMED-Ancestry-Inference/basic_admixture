@@ -10,7 +10,6 @@ workflow projected_admixture {
 		File P
 		File ref_variants
     	Array[File] vcf
-		Int? seed # https://wdl-docs.readthedocs.io/en/latest/WDL/different_parameters/
     	Boolean cross_validation = false
 	}
 	
