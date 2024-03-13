@@ -77,6 +77,10 @@ workflow projected_admixture {
     description: "This workflow is used to project a genetic test dataset (in VCF format) into clusters (\"ancestral populations\") using ADMIXTURE. First, the cluster file (.P produced by ADMIXTURE) and the test dataset are both subset to contain the same set of variants (Note: this workflow assumes that variants from both the .P and test dataset have been previously harmonized such that variants follow the same naming convention, alleles at each site are ordered identically, and variants are sorted). Then the test dataset is projected into the clusters determined by the .P."
 	}
 
+  output {
+    File ancestry_fractions = Admixture_t.ancestry_fractions
+    File allele_frequencies = Admixture_t.allele_frequencies
+  }
 }
 
 task admixReady {
