@@ -1,8 +1,8 @@
 version 1.0
 
 import "https://raw.githubusercontent.com/UW-GAC/primed-file-conversion/main/plink2_pgen2bed.wdl" as pgen_conversion
-import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/vcf_input/create_pca_projection.wdl" as tasks
-import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/vcf_input/projected_pca.wdl" as file_tasks
+import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/create_pca_projection.wdl" as tasks
+import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/projected_pca.wdl" as file_tasks
 
 workflow projected_admixture {
 	input{
