@@ -7,23 +7,17 @@ import "basic_Admixture.wdl" as admixture
 
 workflow projected_admixture {
 	input{
-		File P
-		File ref_variants
+		File ref_allele_freq
     	Array[File] vcf
     	Boolean cross_validation = false
-	}
-	
-	call tasks.identifyColumns {
-		input:
-			ref_variants = ref_variants
 	}
 
 	scatter (file in vcf) {
 		call file_tasks.subsetVariants {
 			input:
 				vcf = file,
-				variant_file = ref_variants,
-				variant_id_col = identifyColumns.id_col
+				variant_file = ref_allele_freq,
+				variant_id_col = 1
 		}
 	}
 
@@ -49,16 +43,8 @@ workflow projected_admixture {
 
 	call admixReady {
 		input:
-			P = P, 
-			ref_variants = ref_variants,
-			variant_id_col = identifyColumns.id_col,
-			pvar = final_pvar
-	}
-	
-	call summary{
-		input:
-			P = P,
-			snps = admixReady.snps
+			ref_allele_freq = ref_allele_freq,
+			bim = pgen2bed.out_bim
 	}
 	
 	call admixture.Admixture_t {
@@ -67,75 +53,48 @@ workflow projected_admixture {
 			bim = pgen2bed.out_bim,
 			fam = pgen2bed.out_fam,
 			P = admixReady.subset_P,
-			n_ancestral_populations = summary.k,
+			n_ancestral_populations = admixReady.k,
 			cross_validation = cross_validation
 	}
-	
+
+	output {
+		File ancestry_fractions = Admixture_t.ancestry_fractions
+		File allele_frequencies = Admixture_t.allele_frequencies
+	}
+
 	meta {
     author: "Jonathan Shortt"
     email: "jonathan.shortt@cuanschutz.edu"
     description: "This workflow is used to project a genetic test dataset (in VCF format) into clusters (\"ancestral populations\") using ADMIXTURE. First, the cluster file (.P produced by ADMIXTURE) and the test dataset are both subset to contain the same set of variants (Note: this workflow assumes that variants from both the .P and test dataset have been previously harmonized such that variants follow the same naming convention, alleles at each site are ordered identically, and variants are sorted). Then the test dataset is projected into the clusters determined by the .P."
 	}
-
-  output {
-    File ancestry_fractions = Admixture_t.ancestry_fractions
-    File allele_frequencies = Admixture_t.allele_frequencies
-  }
 }
 
 task admixReady {
 	input{
-		File P
-		File ref_variants
-		Int variant_id_col
-		File pvar
+		File ref_allele_freq
+		File bim
 	}
 	
-	String basename = basename(P, ".P")
+	String basename = basename(ref_allele_freq)
 
 	command <<<
-		#get a list of variant names, save to extract.txt
-		cut -f3 ~{pvar} > extract.txt
+		#subset ref_allele_freq to only variants also in bim, print all but first column to get .P file
+		awk 'FNR==NR{a[$2]; next}{if($1 in a){print $0}}' ~{bim} ~{ref_allele_freq} | cut -d' ' -f2- > ~{basename}_admixReady.P
 
-		#extract in-common variants from ref.P
-		paste -d'\t' <(cut -f~{variant_id_col} ~{ref_variants}) ~{P} > tmp
-		head tmp
-		head ~{ref_variants}
-		head ~{P}
-		awk 'FNR==NR{a[$1]; next}{if($1 in a){print $0}}' extract.txt tmp | cut -f~{variant_id_col}- > ~{basename}_admixReady.P
-	>>>
-	
-	output {
-		File subset_P="~{basename}_admixReady.P"
-		File snps="extract.txt"
-	}
-	
-	runtime {
-    	docker: "us.gcr.io/broad-dsde-methods/plink2_docker@sha256:4455bf22ada6769ef00ed0509b278130ed98b6172c91de69b5bc2045a60de124"
-	}
-}
-
-task summary {
-	input{
-		File P
-		File snps
-	}
-	
-	#String my_k = ceil(awk NR==1{print NF} P) #maybe do a check on the file to make sure all lines are the same to make more robust?
-	
-	command <<<
-		my_k=$(head -n 1 ~{P} | awk '{print NF}')
+		my_k=$(head -n 1 ~{basename}_admixReady.P | awk '{print NF}')
 		printf "\nProjection will be run with k=${my_k} clusters.\n"
 		printf "${my_k}" > tmp.txt
-		snp_count=$(wc -l < ~{snps})
+
+		snp_count=$(wc -l < ~{basename}_admixReady.P)
 		printf "\nProjection uses ${snp_count} snps.\n"
 	>>>
 	
 	output {
+		File subset_P = "~{basename}_admixReady.P"
 		String k = read_string("tmp.txt")
 	}
 	
-	runtime{
-		docker: "us.gcr.io/broad-dsde-methods/plink2_docker@sha256:4455bf22ada6769ef00ed0509b278130ed98b6172c91de69b5bc2045a60de124"
+	runtime {
+    	docker: "us.gcr.io/broad-dsde-methods/plink2_docker@sha256:4455bf22ada6769ef00ed0509b278130ed98b6172c91de69b5bc2045a60de124"
 	}
 }

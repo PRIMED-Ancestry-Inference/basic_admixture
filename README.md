@@ -27,9 +27,8 @@ Outputs:
 
 output | description
 --- | ---
-ancestry_fractions | ancestry fractions for each sample (.Q otuput from ADMIXTURE)
-allele_frequencies | allele frequencies for each variants (.P output from ADMIXTURE)
-reference_variants | .pvar file with variants used in the final analysis
+ancestry_fractions | ancestry fractions for each sample (.Q output from ADMIXTURE with sample IDs as first column)
+allele_frequencies | allele frequencies for each variants (.P output from ADMIXTURE with variant IDs as first column)
 
 
 ## projected_admixture
@@ -42,8 +41,7 @@ Inputs:
 input | description
 --- | ---
 vcf | Array of VCF files (possibly split by chromosome)
-ref_variants | file with variants to use in the calculation. The column with variant IDs should be labeled 'ID'.
-P | allele_frequencies output (.P file) from basic_admixture workflow
+ref_allele_freq | allele_frequency output from basic_admixture workflow (first column variant id, remaining colums are frequencies in each cluster)
 cross_validation | Boolean for whether run run cross-validation (default false)
 
 
@@ -51,3 +49,5 @@ Outputs:
 
 output | description
 --- | ---
+ancestry_fractions | ancestry fractions for each sample (.Q output from ADMIXTURE with sample IDs as first column)
+allele_frequencies | allele frequencies for each variants (.P output from ADMIXTURE with variant IDs as first column)
