@@ -1,8 +1,8 @@
 version 1.0
 
 import "https://raw.githubusercontent.com/UW-GAC/primed-file-conversion/main/plink2_pgen2bed.wdl" as pgen_conversion
-import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/create_pca_projection.wdl" as tasks
-import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/projected_pca.wdl" as file_tasks
+import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/variant_filtering.wdl" as variant_tasks
+import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/file_tasks.wdl" as file_tasks
 import "basic_Admixture.wdl" as admixture
 
 workflow projected_admixture {
@@ -13,7 +13,7 @@ workflow projected_admixture {
 	}
 
 	scatter (file in vcf) {
-		call file_tasks.subsetVariants {
+		call variant_tasks.subsetVariants {
 			input:
 				vcf = file,
 				variant_file = ref_allele_freq,
@@ -68,6 +68,7 @@ workflow projected_admixture {
     description: "This workflow is used to project a genetic test dataset (in VCF format) into clusters (\"ancestral populations\") using ADMIXTURE. First, the cluster file (.P produced by ADMIXTURE) and the test dataset are both subset to contain the same set of variants (Note: this workflow assumes that variants from both the .P and test dataset have been previously harmonized such that variants follow the same naming convention, alleles at each site are ordered identically, and variants are sorted). Then the test dataset is projected into the clusters determined by the .P."
 	}
 }
+
 
 task admixReady {
 	input{

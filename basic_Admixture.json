@@ -1,5 +1,5 @@
 {
-    "basic_admixture.n_ancestral_populations": 7,
+    "basic_admixture.n_ancestral_populations": 5,
     "basic_admixture.pop": "gs://fc-077a4a13-7468-47d9-9c9c-7ec0559d1402/hgdp1kgp_samples_superpopulation.tsv",
     "basic_admixture.vcf": [
         "gs://terra-featured-workspaces/GWAS/1kg-genotypes/vcf/ALL.chr1.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.bgz",

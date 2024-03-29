@@ -1,6 +1,5 @@
 {
-  "projected_admixture.P": "gs://fc-077a4a13-7468-47d9-9c9c-7ec0559d1402/submissions/270b8053-44e3-412f-94d9-07e1c58c703b/basic_admixture/680a9c1b-6dd1-4fa3-bf8e-afeea1eacf9d/call-Admixture_t/merged_unrel.5.P",
-  "projected_admixture.ref_variants": "gs://fc-077a4a13-7468-47d9-9c9c-7ec0559d1402/submissions/270b8053-44e3-412f-94d9-07e1c58c703b/basic_admixture/680a9c1b-6dd1-4fa3-bf8e-afeea1eacf9d/call-removeRelateds/cacheCopy/merged_unrel.pvar",
+  "projected_admixture.ref_allele_freq": "gs://fc-077a4a13-7468-47d9-9c9c-7ec0559d1402/submissions/e18bcfb1-45b0-484f-9747-c1f8923434bd/basic_admixture/2f7c6dc1-b19a-4ade-a5b5-97a17303fcdd/call-Admixture_t/merged_unrel.5.allele_freq",
   "proejcted_admixture.vcf": [
     "gs://terra-featured-workspaces/GWAS/1kg-genotypes/vcf/ALL.chr1.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.bgz",
     "gs://terra-featured-workspaces/GWAS/1kg-genotypes/vcf/ALL.chr2.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.bgz",

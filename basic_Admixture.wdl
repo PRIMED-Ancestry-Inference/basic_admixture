@@ -1,9 +1,9 @@
 version 1.0
 
-import "https://raw.githubusercontent.com/UW-GAC/primed-file-conversion/main/plink2_vcf2pgen.wdl" as vcf_conversion
 import "https://raw.githubusercontent.com/UW-GAC/primed-file-conversion/main/plink2_pgen2bed.wdl" as pgen_conversion
-import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/create_pca_projection.wdl" as subset_tasks
-import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/projected_pca.wdl" as file_tasks
+import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/variant_filtering.wdl" as variant_tasks
+import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/sample_filtering.wdl" as sample_tasks
+import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/file_tasks.wdl" as file_tasks
 
 workflow basic_admixture {
   input {
@@ -13,6 +13,7 @@ workflow basic_admixture {
     Boolean cross_validation = false
     Boolean prune_variants = true
     Boolean remove_relateds = true
+		Float? min_maf
     Float? max_kinship_coefficient
 		Int? window_size
 		Int? shift_size
@@ -20,26 +21,26 @@ workflow basic_admixture {
   }
 
 	scatter (file in vcf) {
-		call vcf_conversion.vcf2pgen {
+		call variant_tasks.subsetVariants {
 			input:
-				vcf_file = file
+				vcf = file
 		}
 
 		if (prune_variants) {
-			call subset_tasks.pruneVars {
+			call variant_tasks.pruneVars {
 				input:
-					pgen = vcf2pgen.out_pgen,
-					pvar = vcf2pgen.out_pvar,
-					psam = vcf2pgen.out_psam,
+					pgen = subsetVariants.subset_pgen,
+					pvar = subsetVariants.subset_pvar,
+					psam = subsetVariants.subset_psam,
 					window_size = window_size,
 					shift_size = shift_size,
 					r2_threshold = r2_threshold
 			}
 		}
 
-		File subset_pgen = select_first([pruneVars.out_pgen, vcf2pgen.out_pgen])
-		File subset_pvar = select_first([pruneVars.out_pvar, vcf2pgen.out_pvar])
-		File subset_psam = select_first([pruneVars.out_psam, vcf2pgen.out_psam])
+		File subset_pgen = select_first([pruneVars.out_pgen, subsetVariants.subset_pgen])
+		File subset_pvar = select_first([pruneVars.out_pvar, subsetVariants.subset_pvar])
+		File subset_psam = select_first([pruneVars.out_psam, subsetVariants.subset_psam])
 	}
 
 	if (length(vcf) > 1) {
@@ -51,12 +52,12 @@ workflow basic_admixture {
 		}
 	}
 
-	File merged_pgen = select_first([mergeFiles.out_pgen, pruneVars.out_pgen[0], vcf2pgen.out_pgen[0]])
-	File merged_pvar = select_first([mergeFiles.out_pvar, pruneVars.out_pvar[0], vcf2pgen.out_pvar[0]])
-	File merged_psam = select_first([mergeFiles.out_psam, pruneVars.out_psam[0], vcf2pgen.out_psam[0]])
+	File merged_pgen = select_first([mergeFiles.out_pgen, pruneVars.out_pgen[0], subsetVariants.subset_pgen[0]])
+	File merged_pvar = select_first([mergeFiles.out_pvar, pruneVars.out_pvar[0], subsetVariants.subset_pvar[0]])
+	File merged_psam = select_first([mergeFiles.out_psam, pruneVars.out_psam[0], subsetVariants.subset_psam[0]])
 
   	if (remove_relateds) {
-		call subset_tasks.removeRelateds {
+		call sample_tasks.removeRelateds {
 			input:
 				pgen = merged_pgen,
 				pvar = merged_pvar,
