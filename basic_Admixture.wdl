@@ -142,7 +142,7 @@ task Admixture_t {
     File? P # include this for use with projected_admixture
     Int n_ancestral_populations
     Boolean cross_validation = false
-    Int mem = 16
+    Int mem_gb = 16
     Int n_cpus = 4
   }
 
@@ -165,7 +165,7 @@ task Admixture_t {
   runtime {
     docker: "us.gcr.io/broad-dsde-methods/admixture_docker:v1.0.0"
 		disks: "local-disk " + disk_size + " SSD"
-    memory: mem + " GB"
+    memory: mem_gb + " GB"
     cpu: n_cpus
   }
 
