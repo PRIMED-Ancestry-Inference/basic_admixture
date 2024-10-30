@@ -12,12 +12,17 @@ workflow projected_admixture {
     	Boolean cross_validation = false
 	}
 
+	call selectColumn {
+		input:
+			ref_variants = ref_allele_freq,
+			variant_id_col = 1
+	}
+
 	scatter (file in vcf) {
 		call variant_tasks.subsetVariants {
 			input:
 				vcf = file,
-				variant_file = ref_allele_freq,
-				variant_id_col = 1
+				variant_file = selectColumn.id_file
 		}
 	}
 
@@ -66,6 +71,26 @@ workflow projected_admixture {
     author: "Jonathan Shortt"
     email: "jonathan.shortt@cuanschutz.edu"
     description: "This workflow is used to project a genetic test dataset (in VCF format) into clusters (\"ancestral populations\") using ADMIXTURE. First, the cluster file (.P produced by ADMIXTURE) and the test dataset are both subset to contain the same set of variants (Note: this workflow assumes that variants from both the .P and test dataset have been previously harmonized such that variants follow the same naming convention, alleles at each site are ordered identically, and variants are sorted). Then the test dataset is projected into the clusters determined by the .P."
+	}
+}
+
+
+task selectColumn {
+	input {
+		File ref_variants
+		Int variant_id_col = 1
+	}
+
+	command <<<
+		cut -f ~{variant_id_col} ~{ref_variants} > variant_ids.txt
+	>>>
+
+	output {
+		File id_file = "variant_ids.txt"
+	}
+
+	runtime {
+		docker: "us.gcr.io/broad-dsp-gcr-public/anvil-rstudio-bioconductor:3.17.0"
 	}
 }
 

@@ -11,6 +11,7 @@ workflow basic_admixture {
     File? pop
     Int n_ancestral_populations
     Boolean cross_validation = false
+		Int? genome_build
     Boolean prune_variants = true
     Boolean remove_relateds = true
 		Float? min_maf
@@ -23,7 +24,9 @@ workflow basic_admixture {
 	scatter (file in vcf) {
 		call variant_tasks.subsetVariants {
 			input:
-				vcf = file
+				vcf = file,
+				genome_build = genome_build,
+				min_maf = min_maf
 		}
 
 		if (prune_variants) {
