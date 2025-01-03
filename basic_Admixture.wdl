@@ -1,6 +1,5 @@
 version 1.0
 
-import "https://raw.githubusercontent.com/UW-GAC/primed-file-conversion/main/plink2_pgen2bed.wdl" as pgen_conversion
 import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/variant_filtering.wdl" as variant_tasks
 import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/sample_filtering.wdl" as sample_tasks
 import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/file_tasks.wdl" as file_tasks
@@ -32,58 +31,51 @@ workflow basic_admixture {
 		if (prune_variants) {
 			call variant_tasks.pruneVars {
 				input:
-					pgen = subsetVariants.subset_pgen,
-					pvar = subsetVariants.subset_pvar,
-					psam = subsetVariants.subset_psam,
+					bed = subsetVariants.subset_bed,
+					bim = subsetVariants.subset_bim,
+					fam = subsetVariants.subset_fam,
 					window_size = window_size,
 					shift_size = shift_size,
 					r2_threshold = r2_threshold
 			}
 		}
 
-		File subset_pgen = select_first([pruneVars.out_pgen, subsetVariants.subset_pgen])
-		File subset_pvar = select_first([pruneVars.out_pvar, subsetVariants.subset_pvar])
-		File subset_psam = select_first([pruneVars.out_psam, subsetVariants.subset_psam])
+		File subset_bed = select_first([pruneVars.out_bed, subsetVariants.subset_bed])
+		File subset_bim = select_first([pruneVars.out_bim, subsetVariants.subset_bim])
+		File subset_fam = select_first([pruneVars.out_fam, subsetVariants.subset_fam])
 	}
 
 	if (length(vcf) > 1) {
 		call file_tasks.mergeFiles {
 			input:
-				pgen = subset_pgen,
-				pvar = subset_pvar,
-				psam = subset_psam
+				bed = subset_bed,
+				bim = subset_bim,
+				fam = subset_fam
 		}
 	}
 
-	File merged_pgen = select_first([mergeFiles.out_pgen, pruneVars.out_pgen[0], subsetVariants.subset_pgen[0]])
-	File merged_pvar = select_first([mergeFiles.out_pvar, pruneVars.out_pvar[0], subsetVariants.subset_pvar[0]])
-	File merged_psam = select_first([mergeFiles.out_psam, pruneVars.out_psam[0], subsetVariants.subset_psam[0]])
+	File merged_bed = select_first([mergeFiles.out_bed, pruneVars.out_bed[0], subsetVariants.subset_bed[0]])
+	File merged_bim = select_first([mergeFiles.out_bim, pruneVars.out_bim[0], subsetVariants.subset_bim[0]])
+	File merged_fam = select_first([mergeFiles.out_fam, pruneVars.out_fam[0], subsetVariants.subset_fam[0]])
 
   	if (remove_relateds) {
 		call sample_tasks.removeRelateds {
 			input:
-				pgen = merged_pgen,
-				pvar = merged_pvar,
-				psam = merged_psam,
+				bed = merged_bed,
+				bim = merged_bim,
+				fam = merged_fam,
 				max_kinship_coefficient = max_kinship_coefficient
 		}
 	}
 
-	File final_pgen = select_first([removeRelateds.out_pgen, merged_pgen])
-	File final_pvar = select_first([removeRelateds.out_pvar, merged_pvar])
-	File final_psam = select_first([removeRelateds.out_psam, merged_psam])
-
-  call pgen_conversion.pgen2bed {
-    input:
-      pgen = final_pgen,
-      pvar = final_pvar,
-      psam = final_psam
-  }
+	File final_bed = select_first([removeRelateds.out_bed, merged_bed])
+	File final_bim = select_first([removeRelateds.out_bim, merged_bim])
+	File final_fam = select_first([removeRelateds.out_fam, merged_fam])
 
   if (defined(pop)) {
     call subset_pop {
       input:
-        fam = pgen2bed.out_fam,
+        fam = final_fam,
         pop = select_first([pop])
     }
   }
@@ -91,9 +83,9 @@ workflow basic_admixture {
 
   call Admixture_t {
     input:
-      bed = pgen2bed.out_bed,
-      bim = pgen2bed.out_bim,
-      fam = pgen2bed.out_fam,
+      bed = final_bed,
+      bim = final_bim,
+      fam = final_fam,
       pop = this_pop,
       n_ancestral_populations = n_ancestral_populations,
       cross_validation = cross_validation
