@@ -21,7 +21,7 @@ workflow projected_admixture {
 		call variant_tasks.subsetVariants {
 			input:
 				vcf = file,
-				variant_file = selectColumn.id_file
+				variant_files = [selectColumn.id_file]
 		}
 	}
 
