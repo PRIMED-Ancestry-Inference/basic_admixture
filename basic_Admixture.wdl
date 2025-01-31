@@ -7,6 +7,8 @@ import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projecti
 workflow basic_admixture {
 	input {
 		Array[File] vcf
+		File? ref_variants
+		File? sample_file
 		File? pop
 		Int n_ancestral_populations
 		Boolean cross_validation = false
@@ -24,6 +26,8 @@ workflow basic_admixture {
 		call variant_tasks.subsetVariants {
 			input:
 				vcf = file,
+				variant_files = select_all([ref_variants]),
+				sample_file = sample_file,
 				genome_build = genome_build,
 				min_maf = min_maf
 		}
