@@ -1,6 +1,6 @@
 version 1.0
 
-import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/variant_filtering.wdl" as variant_tasks
+import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/filter_chr/variant_filtering.wdl" as variant_tasks
 import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/sample_filtering.wdl" as sample_tasks
 import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/file_tasks.wdl" as file_tasks
 
@@ -29,7 +29,8 @@ workflow basic_admixture {
 				variant_files = select_all([ref_variants]),
 				sample_file = sample_file,
 				genome_build = genome_build,
-				min_maf = min_maf
+				min_maf = min_maf,
+				output_chr = "26"
 		}
 
 		if (prune_variants) {
