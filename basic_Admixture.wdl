@@ -7,6 +7,8 @@ import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projecti
 workflow basic_admixture {
 	input {
 		Array[File] vcf
+		File? ref_variants
+		File? sample_file
 		File? pop
 		Int n_ancestral_populations
 		Boolean cross_validation = false
@@ -20,12 +22,22 @@ workflow basic_admixture {
 		Int? r2_threshold
 	}
 
+	if (defined(ref_variants)) {
+		call remove_chr_prefix {
+			input: 
+				variant_file = select_first([ref_variants, ""])
+		}
+	}
+
 	scatter (file in vcf) {
 		call variant_tasks.subsetVariants {
 			input:
 				vcf = file,
+				variant_files = select_all([remove_chr_prefix.output_file]),
+				sample_file = sample_file,
 				genome_build = genome_build,
-				min_maf = min_maf
+				min_maf = min_maf,
+				output_chr = "26"
 		}
 
 		if (prune_variants) {
@@ -36,7 +48,8 @@ workflow basic_admixture {
 					fam = subsetVariants.subset_fam,
 					window_size = window_size,
 					shift_size = shift_size,
-					r2_threshold = r2_threshold
+					r2_threshold = r2_threshold,
+					output_chr = "26"
 			}
 		}
 
@@ -50,7 +63,8 @@ workflow basic_admixture {
 			input:
 				bed = subset_bed,
 				bim = subset_bim,
-				fam = subset_fam
+				fam = subset_fam,
+				output_chr = "26"
 		}
 	}
 
@@ -64,7 +78,8 @@ workflow basic_admixture {
 				bed = merged_bed,
 				bim = merged_bim,
 				fam = merged_fam,
-				max_kinship_coefficient = max_kinship_coefficient
+				max_kinship_coefficient = max_kinship_coefficient,
+				output_chr = "26"
 		}
 	}
 
@@ -94,6 +109,25 @@ workflow basic_admixture {
 	output {
 		File ancestry_fractions = Admixture_t.ancestry_fractions
 		File allele_frequencies = Admixture_t.allele_frequencies
+	}
+}
+
+
+task remove_chr_prefix {
+	input {
+		File variant_file
+	}
+
+	command <<<
+		sed 's/^chr//' ~{variant_file} > chr_int.txt
+	>>>
+
+	output {
+		File output_file = "chr_int.txt"
+	}
+
+	runtime {
+		docker: "us.gcr.io/broad-dsp-gcr-public/anvil-rstudio-bioconductor:3.16.0"
 	}
 }
 

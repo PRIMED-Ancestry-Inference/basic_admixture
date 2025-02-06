@@ -21,7 +21,8 @@ workflow projected_admixture {
 		call variant_tasks.subsetVariants {
 			input:
 				vcf = file,
-				variant_files = [selectColumn.id_file]
+				variant_files = [selectColumn.id_file],
+				output_chr = "26"
 		}
 	}
 
@@ -30,7 +31,8 @@ workflow projected_admixture {
 			input:
 				bed = subsetVariants.subset_bed,
 				bim = subsetVariants.subset_bim,
-				fam = subsetVariants.subset_fam
+				fam = subsetVariants.subset_fam,
+				output_chr = "26"
 		}
 	}
 

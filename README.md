@@ -12,6 +12,8 @@ Inputs:
 input | description
 --- | ---
 vcf | Array of VCF files (possibly split by chromosome)
+ref_variants | Optional file with variants to use.
+sample_file | Optional file with sample IDs to keep. This should be in the form accepted by PLINK ("FID\tIID"), so the sample ID column should be duplicated.
 pop | Optional file with known population labels. This should be a two-column file in the format "id pop". If this file is provided, ADMIXTURE is run in supervised mode; otherwise, the clustering is unsupervised.
 n_ancestral_populations | number of clusters to infer
 cross_validation | Boolean for whether to run cross-validation (default false)
