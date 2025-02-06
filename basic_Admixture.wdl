@@ -125,6 +125,10 @@ task remove_chr_prefix {
 	output {
 		File output_file = "chr_int.txt"
 	}
+
+	runtime {
+		docker: "us.gcr.io/broad-dsp-gcr-public/anvil-rstudio-bioconductor:3.16.0"
+	}
 }
 
 
