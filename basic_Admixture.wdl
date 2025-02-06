@@ -22,14 +22,22 @@ workflow basic_admixture {
 		Int? r2_threshold
 	}
 
+	if (defined(ref_variants)) {
+		call remove_chr_prefix {
+			input: 
+				variant_file = select_first([ref_variants, ""])
+		}
+	}
+
 	scatter (file in vcf) {
 		call variant_tasks.subsetVariants {
 			input:
 				vcf = file,
-				variant_files = select_all([ref_variants]),
+				variant_files = select_all([remove_chr_prefix.output_file]),
 				sample_file = sample_file,
 				genome_build = genome_build,
-				min_maf = min_maf
+				min_maf = min_maf,
+				output_chr = "26"
 		}
 
 		if (prune_variants) {
@@ -101,6 +109,21 @@ workflow basic_admixture {
 	output {
 		File ancestry_fractions = Admixture_t.ancestry_fractions
 		File allele_frequencies = Admixture_t.allele_frequencies
+	}
+}
+
+
+task remove_chr_prefix {
+	input {
+		File variant_file
+	}
+
+	command <<<
+		sed 's/^chr//' ~{variant_file} > chr_int.txt
+	>>>
+
+	output {
+		File output_file = "chr_int.txt"
 	}
 }
 
