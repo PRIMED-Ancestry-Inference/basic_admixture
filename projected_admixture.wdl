@@ -1,7 +1,7 @@
 version 1.0
 
-import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/filter_chr/variant_filtering.wdl" as variant_tasks
-import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/filter_chr/file_tasks.wdl" as file_tasks
+import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/variant_filtering.wdl" as variant_tasks
+import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/file_tasks.wdl" as file_tasks
 import "basic_Admixture.wdl" as admixture
 
 workflow projected_admixture {
