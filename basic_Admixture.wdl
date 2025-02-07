@@ -220,7 +220,6 @@ task plot_admixture {
 	command <<<
 		Rscript -e "\
 		library(tidyverse); \
-		library(tidyverse); \
 		library(RColorBrewer); \
 		dat <- read_delim('~{ancestry_frac}', col_names=FALSE); \
 		K <- ncol(dat) - 1; \
@@ -235,15 +234,8 @@ task plot_admixture {
 		scale_fill_manual(values=colormap, breaks=rev(names(colormap))) + \
 		scale_color_manual(values=colormap, breaks=rev(names(colormap))) + \
 		theme_classic() + \
-		theme(axis.line=element_blank(), \
-			axis.ticks.x=element_blank(), \
-			axis.text.x=element_blank(), \
-			axis.title.x=element_blank(), \
-			axis.ticks.y=element_blank(), \
-			axis.text.y=element_blank(), \
-			axis.title.y=element_blank(), \
-			panel.spacing=unit(0, 'in')); \
-		ggsave('admixture_plot.png', width=11, height=4)
+		theme(axis.line=element_blank(), axis.ticks.x=element_blank(), axis.text.x=element_blank(), axis.title.x=element_blank(), axis.ticks.y=element_blank(), axis.text.y=element_blank(), axis.title.y=element_blank(), panel.spacing=unit(0, 'in')); \
+		ggsave('admixture_plot.png', width=11, height=4); \
 		"
 	>>>
 
@@ -252,7 +244,8 @@ task plot_admixture {
 	}
 
 	runtime {
-		docker: "us.gcr.io/broad-dsp-gcr-public/anvil-rstudio-bioconductor:3.16.0"
+		docker: "rocker/tidyverse:4"
+"
 	}
 }
 
