@@ -133,7 +133,7 @@ task remove_chr_prefix {
 	}
 
 	runtime {
-		docker: "us.gcr.io/broad-dsp-gcr-public/anvil-rstudio-bioconductor:3.16.0"
+		docker: "rocker/tidyverse:4"
 	}
 }
 
@@ -163,7 +163,7 @@ task subset_pop {
 	}
 
 	runtime {
-		docker: "us.gcr.io/broad-dsp-gcr-public/anvil-rstudio-bioconductor:3.16.0"
+		docker: "rocker/tidyverse:4"
 	}
 }
 
@@ -245,7 +245,5 @@ task plot_admixture {
 
 	runtime {
 		docker: "rocker/tidyverse:4"
-"
 	}
 }
-
