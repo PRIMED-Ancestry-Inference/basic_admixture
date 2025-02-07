@@ -56,9 +56,15 @@ workflow projected_admixture {
 			cross_validation = cross_validation
 	}
 
+	call admixture.plot_admixture {
+		input:
+			ancestry_frac = Admixture_t.ancestry_fractions
+	}
+
 	output {
 		File ancestry_fractions = Admixture_t.ancestry_fractions
 		File allele_frequencies = Admixture_t.allele_frequencies
+		File ancestry_plot = plot_admixture.plot
 	}
 
 	meta {
