@@ -14,3 +14,6 @@ workflows:
        - /basic_Admixture.json
     authors:
       - orcid: 0000-0002-7980-5420
+  - name: ref_panel_admixture
+    subclass: WDL
+    primaryDescriptorPath: /ref_panel_admixture.wdl
