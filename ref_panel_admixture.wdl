@@ -6,20 +6,21 @@ import "projected_admixture.wdl" as projected_admixture
 
 workflow ref_panel_admixture{
     input {
-        Array[File] vcf_file
+        Array[File] study_vcf_file
+        Array[File] ref_vcf_file
         Int n_ancestral_populations
     }
 
     call extract_vcf_ids.extract_vcf_ids {
         input:
-            vcf_file = vcf_file
+            vcf_file = study_vcf_file
 
         # output = variant_file
     }
 
     call basic_admixture.basic_admixture {
         input:
-            vcf = vcf_file,
+            vcf = ref_vcf_file,
             ref_variants = extract_vcf_ids.variant_file,
             n_ancestral_populations = n_ancestral_populations
 
@@ -29,7 +30,7 @@ workflow ref_panel_admixture{
     call projected_admixture.projected_admixture {
         input:
             ref_allele_freq = basic_admixture.allele_frequencies,
-		    vcf = vcf_file
+		    vcf = study_vcf_file
 
         # output = ancestry_fractions, allele_frequencies, ancestry_plot
     }
