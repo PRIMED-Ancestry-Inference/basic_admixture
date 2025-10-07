@@ -9,6 +9,7 @@ workflow ref_panel_admixture{
         Array[File] study_vcf_file
         Array[File] ref_vcf_file
         Int n_ancestral_populations
+        Int mem_gb = 16
     }
 
     call extract_vcf_ids.extract_vcf_ids {
@@ -30,7 +31,8 @@ workflow ref_panel_admixture{
     call projected_admixture.projected_admixture {
         input:
             ref_allele_freq = basic_admixture.allele_frequencies,
-		    vcf = study_vcf_file
+		    vcf = study_vcf_file, 
+            mem_gb = mem_gb
 
         # output = ancestry_fractions, allele_frequencies, ancestry_plot
     }
