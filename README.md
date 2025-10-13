@@ -60,7 +60,7 @@ allele_frequencies | allele frequencies for each variants (.P output from ADMIXT
 
 ## ref_panel_admixture
 
-This workflow runs extract_vcf_ids, and in succesion. This workflow is used to extract variant identifiers from a set of study VCFs (extract_vcf_ids), runs ADMIXTURE using the reference panel VCFs and the variants identified in the first step (basic_admixture), and projects the study VCFs (projected_admixture)
+This workflow runs extract_vcf_ids, basic_admixture and projected_admixture in succesion. This workflow is used to extract variant identifiers from a set of study VCFs (extract_vcf_ids), runs ADMIXTURE using the reference panel VCFs and the variants identified in the first step (basic_admixture), and projects the study VCFs (projected_admixture)
 	
 
 Inputs:
