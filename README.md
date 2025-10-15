@@ -55,3 +55,30 @@ output | description
 --- | ---
 ancestry_fractions | ancestry fractions for each sample (.Q output from ADMIXTURE with sample IDs as first column)
 allele_frequencies | allele frequencies for each variants (.P output from ADMIXTURE with variant IDs as first column)
+
+
+
+## ref_panel_admixture
+
+This workflow runs extract_vcf_ids, basic_admixture and projected_admixture in succesion. This workflow is used to extract variant identifiers from a set of study VCFs (extract_vcf_ids), runs ADMIXTURE using the reference panel VCFs and the variants identified in the first step (basic_admixture), and projects the study VCFs (projected_admixture)
+	
+
+Inputs:
+
+input | description
+--- | ---
+study_vcf_file | Array of study VCF files (possibly split by chromosome)
+ref_vcf_file | Array of reference panel VCF files (possibly split by chromosome)
+n_ancestral_populations | number of clusters to infer
+
+
+Outputs:
+
+output | description
+--- | ---
+ref_ancestry_fractions | ancestry fractions for each sample in reference panel (.Q output from ADMIXTURE with sample IDs as first column)
+ref_allele_frequencies | allele frequencies for each variants in reference panel (.P output from ADMIXTURE with variant IDs as first column)
+ref_ancestry_plot | ancestry plot for samples in reference panel 
+ancestry_fractions | ancestry fractions for each sample in study data (.Q output from ADMIXTURE with sample IDs as first column)
+allele_frequencies | allele frequencies for each variants in study data (.P output from ADMIXTURE with variant IDs as first column)
+ancestry_plot | ancestry plot for samples in study data

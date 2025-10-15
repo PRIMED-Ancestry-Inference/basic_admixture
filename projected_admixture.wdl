@@ -9,6 +9,7 @@ workflow projected_admixture {
 		File ref_allele_freq
 		Array[File] vcf
 		Boolean cross_validation = false
+		Int mem_gb = 16
 	}
 
 	call selectColumn {
@@ -53,7 +54,8 @@ workflow projected_admixture {
 			fam = final_fam,
 			P = admixReady.subset_P,
 			n_ancestral_populations = admixReady.k,
-			cross_validation = cross_validation
+			cross_validation = cross_validation,
+			mem_gb = mem_gb
 	}
 
 	call admixture.plot_admixture {
