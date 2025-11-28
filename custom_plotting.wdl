@@ -28,7 +28,7 @@ task plot {
         library(tidyverse)
         library(RColorBrewer)
 
-        ancestry_frac <- read_tsv("~{ancestry_frac}", col_names = FALSE)
+        ancestry_frac <- read_table("~{ancestry_frac}", col_names = FALSE)
         K <- ncol(ancestry_frac) - 1
         names(ancestry_frac) <- c('sample_id', paste0('K', 1:K))
 
@@ -37,7 +37,7 @@ task plot {
         print(dim(ancestry_frac))
         print(col_names(ancestry_frac))
         print(head(cluster_map))
-        
+
         ancestry_frac <- ancestry_frac %>% rename(!!!setNames(cluster_map$new, cluster_map$old))
 
         cluster_order <- paste0("K", 1:K)
