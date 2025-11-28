@@ -17,3 +17,6 @@ workflows:
   - name: ref_panel_admixture
     subclass: WDL
     primaryDescriptorPath: /ref_panel_admixture.wdl
+  - name: custom_plotting
+    subclass: WDL
+    primaryDescriptorPath: /custom_plotting.wdl

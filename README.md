@@ -82,3 +82,23 @@ ref_ancestry_plot | ancestry plot for samples in reference panel
 ancestry_fractions | ancestry fractions for each sample in study data (.Q output from ADMIXTURE with sample IDs as first column)
 allele_frequencies | allele frequencies for each variants in study data (.P output from ADMIXTURE with variant IDs as first column)
 ancestry_plot | ancestry plot for samples in study data
+
+
+
+## custom_plotting
+
+This workflow makes ancestry plots with cluster labels from input file. 
+	
+
+Inputs:
+
+input | description
+--- | ---
+ancestry_frac | File with ancestry fractions 
+cluster_groups | File with two columns. First column is new cluster labels, the second column is which original cluster label maps to the new cluster label
+
+
+Outputs:
+
+output | description
+ancestry_plot | ancestry plot for samples with new labels 
