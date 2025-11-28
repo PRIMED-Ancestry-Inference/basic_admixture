@@ -9,7 +9,7 @@ workflow custom_plotting {
     call plot {
         input: 
             ancestry_frac = ancestry_frac, 
-            cluster_groups? = cluster_groups
+            cluster_groups = cluster_groups
     }
 
     output {
@@ -33,7 +33,7 @@ task plot {
         names(ancestry_frac) <- c('sample_id', paste0('K', 1:K))
 
         # Optional: rename clusters if cluster_groups provided
-        if (defined("~{cluster_groups}")) {
+        if ("~{cluster_groups}" != "") {
             cluster_map <- read_tsv('~{cluster_groups}', col_names = c('new', 'old'))
             ancestry_frac <- ancestry_frac %>% rename(!!!setNames(cluster_map$new, cluster_map$old))
         }
