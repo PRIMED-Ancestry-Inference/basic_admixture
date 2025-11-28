@@ -67,7 +67,7 @@ task plot {
                     axis.title.y=element_blank(), 
                     panel.spacing=unit(0, 'in')
                 )
-        ggsave('ancestry_plot.png', p, width=10, height=4)
+        ggsave("ancestry_plot.png", p, width=10, height=4)
         RSCRIPT
     >>>
 
