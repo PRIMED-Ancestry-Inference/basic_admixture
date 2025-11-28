@@ -34,8 +34,7 @@ task plot {
 
         cluster_map <- read_tsv("~{cluster_groups}", col_names = c('new', 'old'))
 
-        print(dim(ancestry_frac))
-        print(col_names(ancestry_frac))
+        print(head(ancestry_frac))
         print(head(cluster_map))
 
         ancestry_frac <- ancestry_frac %>% rename(!!!setNames(cluster_map$new, cluster_map$old))
