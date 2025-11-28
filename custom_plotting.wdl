@@ -50,7 +50,7 @@ task plot {
                 values_to = "K"
             )
 
-        ancestry_frac$Cluster <- factor(ancestry_frac$Cluster, levels = cluster_order)
+        ancestry_frac[['Cluster']] <- factor(ancestry_frac[['Cluster']], levels = cluster_order)
 
         d2 <- brewer.pal(8, 'Set1')
         s2 <- brewer.pal(8, 'Pastel1')
