@@ -37,7 +37,7 @@ task plot {
         print(head(ancestry_frac))
         print(head(cluster_map))
 
-        ancestry_frac <- ancestry_frac %>% rename(!!!setNames(cluster_map$new, cluster_map$old))
+        ancestry_frac <- ancestry_frac %>% rename(!!!setNames(cluster_map[['new']], cluster_map[['old']]))
 
         cluster_order <- paste0("K", 1:K)
         ancestry_frac <- ancestry_frac %>% arrange(across(all_of(cluster_order)))
