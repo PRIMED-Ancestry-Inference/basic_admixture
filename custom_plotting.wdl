@@ -34,18 +34,16 @@ task plot {
 
         cluster_map <- read_tsv("~{cluster_groups}", col_names = c('new', 'old'))
 
-        print(head(ancestry_frac))
-        print(head(cluster_map))
+        ancestry_frac <- ancestry_frac %>% dplyr::rename(!!!setNames(cluster_map[['old']], cluster_map[['new']]))
 
-        ancestry_frac <- ancestry_frac %>% rename(!!!setNames(cluster_map[['new']], cluster_map[['old']]))
+        cluster_order <- dat %>% select(-sample_id) %>% colSums() %>% sort(decreasing = TRUE) %>% names()
 
-        cluster_order <- paste0("K", 1:K)
         ancestry_frac <- ancestry_frac %>% arrange(across(all_of(cluster_order)))
         ancestry_frac <- ancestry_frac %>% mutate(n = row_number())
 
         ancestry_frac <- ancestry_frac %>% 
             pivot_longer(
-                cols = starts_with("K"),
+                cols = all_of(cluster_order),
                 names_to = "Cluster",
                 values_to = "K"
             )
