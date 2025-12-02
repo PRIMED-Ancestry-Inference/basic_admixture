@@ -36,7 +36,7 @@ task plot {
 
         ancestry_frac <- ancestry_frac %>% dplyr::rename(!!!setNames(cluster_map[['old']], cluster_map[['new']]))
 
-        cluster_order <- dat %>% select(-sample_id) %>% colSums() %>% sort(decreasing = TRUE) %>% names()
+        cluster_order <- ancestry_frac %>% select(-sample_id) %>% colSums() %>% sort(decreasing = TRUE) %>% names()
 
         ancestry_frac <- ancestry_frac %>% arrange(across(all_of(cluster_order)))
         ancestry_frac <- ancestry_frac %>% mutate(n = row_number())
