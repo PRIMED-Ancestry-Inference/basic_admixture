@@ -52,7 +52,7 @@ task plot {
 
         d2 <- brewer.pal(8, 'Set1')
         s2 <- brewer.pal(8, 'Pastel1')
-        colormap <- setNames(c(d2, s2)[1:K], paste0("K", 1:K))
+        colormap <- setNames(c(d2, s2)[1:K], cluster_order)
 
         p <- ggplot(ancestry_frac, aes(x=n, y=K, fill=Cluster, color=Cluster)) + 
             geom_bar(stat='identity') + 
