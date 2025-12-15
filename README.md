@@ -95,7 +95,7 @@ Inputs:
 input | description
 --- | ---
 ancestry_frac | File with ancestry fractions 
-cluster_groups | File with two columns. First column is new cluster labels, the second column is which original cluster label maps to the new cluster label
+cluster_groups | File with two to three columns. First column is new cluster labels, the second column is which original cluster label maps to the new cluster label. Optional third column is hex code color. 
 
 
 Outputs:
