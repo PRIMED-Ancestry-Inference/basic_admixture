@@ -7,6 +7,9 @@ workflows:
       - orcid: 0000-0002-7989-5420
     testParameterFiles:
        - /projected_admixture.json
+  - name: projected_admixture_plotting
+    subclass: WDL
+    primaryDescriptorPath: /projected_admixture_plotting.wdl
   - name: basic_admixture
     subclass: WDL
     primaryDescriptorPath: /basic_Admixture.wdl
