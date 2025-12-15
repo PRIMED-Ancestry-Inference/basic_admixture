@@ -32,7 +32,13 @@ task plot {
         K <- ncol(ancestry_frac) - 1
         names(ancestry_frac) <- c('sample_id', paste0('K', 1:K))
 
-        cluster_map <- read_tsv("~{cluster_groups}", col_names = c('new', 'old'))
+        cluster_map <- read_tsv("~{cluster_groups}", col_names = FALSE)
+
+        if (ncol(cluster_map) == 2) {
+            names(cluster_map) <- c("new", "old")
+        } else if (ncol(cluster_map) == 3) {
+            names(cluster_map) <- c("new", "old", "colors")
+        }
 
         ancestry_frac <- ancestry_frac %>% dplyr::rename(!!!setNames(cluster_map[['old']], cluster_map[['new']]))
 
@@ -50,9 +56,18 @@ task plot {
 
         ancestry_frac[['Cluster']] <- factor(ancestry_frac[['Cluster']], levels = cluster_order)
 
-        d2 <- brewer.pal(8, 'Set1')
-        s2 <- brewer.pal(8, 'Pastel1')
-        colormap <- setNames(c(d2, s2)[1:K], cluster_order)
+        if ("colors" %in% names(cluster_map)) {
+            color_vec <- cluster_map %>%
+                filter(new %in% cluster_order) %>%
+                arrange(match(new, cluster_order)) %>%
+                pull(colors)
+            } else {
+            d2 <- brewer.pal(8, 'Set1')
+            s2 <- brewer.pal(8, 'Pastel1')
+            auto <- c(d2, s2)
+            color_vec <- auto[seq_along(cluster_order)]
+        }
+        colormap <- setNames(color_vec, cluster_order)
 
         p <- ggplot(ancestry_frac, aes(x=n, y=K, fill=Cluster, color=Cluster)) + 
             geom_bar(stat='identity') + 
