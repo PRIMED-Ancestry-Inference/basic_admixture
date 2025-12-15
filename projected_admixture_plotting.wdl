@@ -68,10 +68,10 @@ workflow projected_admixture {
     }
 
     if (defined(cluster_groups)) {
-        call custom_plotting {
+        call custom_plotting.custom_plotting {
             input: 
                 ancestry_frac = Admixture_t.ancestry_fractions, 
-                cluster_groups = cluster_groups
+                cluster_groups = select_first([cluster_groups])
         }
     }
 
