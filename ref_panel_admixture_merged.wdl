@@ -1,8 +1,8 @@
 version 1.0 
 
 import "https://raw.githubusercontent.com/UW-GAC/primed-bcftools/5243ee37ea5e360788a9ba43fe24cb83a27292bf/extract_vcf_ids.wdl" as extract_vcf_ids
-import "basic_Admixture.wdl" as basic_admixture
-import "projected_admixture.wdl" as projected_admixture
+import "basic_admixture_merged.wdl" as basic_admixture
+import "projected_admixture_merged.wdl" as projected_admixture
 
 workflow ref_panel_admixture{
     input {
