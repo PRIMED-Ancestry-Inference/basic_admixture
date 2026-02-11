@@ -115,6 +115,9 @@ workflow basic_admixture {
 		File ancestry_fractions = Admixture_t.ancestry_fractions
 		File allele_frequencies = Admixture_t.allele_frequencies
 		File ancestry_plot = plot_admixture.plot
+		File bed = final_bed
+		File bim = final_bim
+		File fam = final_fam
 	}
 }
 

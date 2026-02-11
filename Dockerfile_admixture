@@ -1,0 +1,7 @@
+FROM r-base:4.4.0
+
+RUN apt-get -y update
+RUN apt-get -y install git
+
+RUN cd /usr/local && \
+   git clone -b ref_panel_admixture https://github.com/PRIMED-Ancestry-Inference/basic_admixture.git
