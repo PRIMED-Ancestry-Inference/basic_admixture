@@ -20,9 +20,9 @@ workflows:
   - name: ref_panel_admixture
     subclass: WDL
     primaryDescriptorPath: /ref_panel_admixture.wdl
-  - name: basic_admixture
+  - name: basic_admixture_merged
     subclass: WDL
-    primaryDescriptorPath: /basic_Admixture.wdl
+    primaryDescriptorPath: /basic_admixture_merged.wdl
   - name: projected_admixture_merged
     subclass: WDL
     primaryDescriptorPath: /projected_admixture_merged.wdl
