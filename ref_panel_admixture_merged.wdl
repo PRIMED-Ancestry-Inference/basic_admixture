@@ -4,14 +4,13 @@ import "https://raw.githubusercontent.com/UW-GAC/primed-bcftools/5243ee37ea5e360
 import "basic_admixture_merged.wdl" as basic_admixture
 import "projected_admixture_merged.wdl" as projected_admixture
 
-workflow ref_panel_admixture{
+workflow ref_panel_admixture_merged {
     input {
         Array[File] study_vcf_file
         Array[File] ref_vcf_file
         Int n_ancestral_populations
         File? ref_sample
-        File? ref_pop
-        Int mem_gb = 16
+        File ref_pop
     }
 
     call extract_vcf_ids.extract_vcf_ids {
@@ -85,6 +84,17 @@ task merge {
         Int mem_gb = 16
     }
 
+    Int disk_size = ceil(
+        2.5 * (
+            size(ref_bed, "GB") +
+            size(ref_bim, "GB") +
+            size(ref_fam, "GB") +
+            size(proj_bed, "GB") +
+            size(proj_bim, "GB") +
+            size(proj_fam, "GB")
+        )
+    ) + 20
+
     command <<<
         set -e -o pipefail
         
@@ -104,19 +114,18 @@ task merge {
 
         plink \
         --bfile merged \
-        --recode vcf-iid \
+        --recode vcf-iid bgz \
         --out merged
-
-        bgzip -c merged.vcf > merged.vcf.gz
     >>>
 
     output {
         File merged_vcf = "merged.vcf.gz"
-        File merged_fam = "merge.fam"
+        File merged_fam = "merged.fam"
     }
 
     runtime {
-        docker: "quay.io/biocontainers/plink2:2.00a5.12--h4ac6f70_0"
+        docker: "quay.io/biocontainers/plink:1.90b6.21--h516909a_0"
+        disks: "local-disk " + disk_size + " SSD"
         memory: mem_gb + " GB"
     }
 }
@@ -125,7 +134,7 @@ task make_merged_pop_file {
   input {
     File merged_fam
     File ref_ancestry_frac
-    File? ref_pop
+    File ref_pop
   }
 
   command <<<
@@ -136,13 +145,7 @@ task make_merged_pop_file {
         sample <- data.frame(FID = fam[[1]], IID = fam[[2]])
         sample_tmp <- data.frame(IID = fam[,2])
 
-        if (file.exists('~{ref_pop}')) {
-            pop_tmp <- read.table('~{ref_pop}', stringsAsFactors=F, col.names = c('IID', 'POP'))
-        } else {
-            anc <- read.table('~{ref_ancestry_frac}', stringsAsFactors=F)
-            clusters <- apply(anc[,-1], 1, function(x) which.max(x))
-            pop_tmp <- data.frame(IID = anc[[1]], POP = as.character(clusters))
-        }
+        pop_tmp <- read.table('~{ref_pop}', stringsAsFactors=F, col.names = c('IID', 'POP'))
 
         #left join sample and pop, fill in blanks with "-"
         pop <- left_join(sample_tmp, pop_tmp, by = 'IID') %>% mutate(POP = if_else(is.na(POP), '-', POP))
