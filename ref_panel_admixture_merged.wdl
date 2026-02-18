@@ -95,20 +95,15 @@ task merge {
         )
     ) + 20
 
+    String ref_prefix = basename(ref_bed, ".bed")
+    String proj_prefix = basename(proj_bed, ".bed")
+
     command <<<
         set -e -o pipefail
-        
-        ln -s ${ref_bed} ref.bed
-        ln -s ${ref_bim} ref.bim
-        ln -s ${ref_fam} ref.fam
-
-        ln -s ${proj_bed} proj.bed
-        ln -s ${proj_bim} proj.bim
-        ln -s ${proj_fam} proj.fam
 
         plink \
-        --bfile ref \
-        --bmerge proj.bed proj.bim proj.fam \
+        --bfile ~{ref_prefix} \
+        --bmerge ~{proj_prefix}.bed ~{proj_prefix}.bim ~{proj_prefix}.fam \
         --make-bed \
         --out merged
 
