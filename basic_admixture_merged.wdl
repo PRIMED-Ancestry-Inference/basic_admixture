@@ -19,7 +19,7 @@ workflow basic_admixture {
 		Float? max_kinship_coefficient
 		Int? window_size
 		Int? shift_size
-		Int? r2_threshold
+		Float? r2_threshold
 	}
 
 	if (defined(ref_variants)) {
