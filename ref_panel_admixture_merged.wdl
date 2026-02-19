@@ -173,7 +173,7 @@ task plot_admixture {
         library(tidyverse); \
         library(RColorBrewer); \
         fam <- read_table('~{proj_fam}', col_names=FALSE); \
-        target_ids <- fam$X2; \
+        target_ids <- fam[[2]]; \
         dat <- read_delim('~{ancestry_frac}', col_names=FALSE); \
         K <- ncol(dat) - 1; \
         names(dat) <- c('sample_id', paste0('K', 1:K)); \
