@@ -112,7 +112,7 @@ task merge {
 
     output {
         File merged_vcf = "merged_combined.vcf.gz"
-        File merged_fam = "merged_combined.fam"
+        File merged_fam = "tmp.fam"
     }
 
     runtime {
