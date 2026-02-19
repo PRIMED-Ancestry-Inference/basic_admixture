@@ -67,7 +67,7 @@ workflow ref_panel_admixture_merged {
     call plot_admixture {
         input: 
             ancestry_frac = merged_admixture.ancestry_fractions,
-            proj_fam = projected_admixture.fam
+            proj_fam = projected_admixture.fam,
             ref_pop = ref_pop
     }
     output {
