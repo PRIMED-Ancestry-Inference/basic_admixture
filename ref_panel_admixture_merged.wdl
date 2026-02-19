@@ -64,10 +64,15 @@ workflow ref_panel_admixture_merged {
             sample_file = make_merged_pop_file.sample_file
     }
 
+    call plot_admixture {
+        input: 
+            ancestry_frac = merged_admixture.ancestry_fractions,
+            proj_fam = projected_admixture.fam
+    }
     output {
         File ancestry_fractions = merged_admixture.ancestry_fractions
 		File allele_frequencies = merged_admixture.allele_frequencies
-		File plot = merged_admixture.ancestry_plot
+		File plot = plot_admixture.plot
     }
 }
 
@@ -155,4 +160,44 @@ task make_merged_pop_file {
   runtime {
     docker: "rocker/tidyverse:4"
   }
+}
+
+task plot_admixture {
+    input {
+        File ancestry_frac
+        File proj_fam
+    }
+
+	command <<<
+        Rscript -e "\
+        library(tidyverse); \
+        library(RColorBrewer); \
+        fam <- read_table('~{proj_fam}', col_names=FALSE); \
+        target_ids <- fam$X2; \
+        dat <- read_delim('~{ancestry_frac}', col_names=FALSE); \
+        K <- ncol(dat) - 1; \
+        names(dat) <- c('sample_id', paste0('K', 1:K)); \
+        dat <- dat %>% filter(sample_id %in% target_ids); \
+        dat <- arrange(dat, across(starts_with('K'))); \
+        dat <- mutate(dat, n=row_number()); \
+        dat <- pivot_longer(dat, starts_with('K'), names_to='Cluster', values_to='K'); \
+        d2 <- brewer.pal(8, 'Dark2'); s2 <- brewer.pal(8, 'Set2'); \
+        colormap <- setNames(c(d2, s2)[1:K], paste0('K', 1:K)); \
+        ggbar <- ggplot(dat, aes(x=n, y=K, fill=Cluster, color=Cluster)) + \
+        geom_bar(stat='identity') + \
+        scale_fill_manual(values=colormap, breaks=rev(names(colormap))) + \
+        scale_color_manual(values=colormap, breaks=rev(names(colormap))) + \
+        theme_classic() + \
+        theme(axis.line=element_blank(), axis.ticks.x=element_blank(), axis.text.x=element_blank(), axis.title.x=element_blank(), axis.ticks.y=element_blank(), axis.text.y=element_blank(), axis.title.y=element_blank(), panel.spacing=unit(0, 'in')); \
+        ggsave('admixture_plot.png', width=11, height=4); \
+        "
+	>>>
+
+	output {
+		File plot = "admixture_plot.png"
+	}
+
+	runtime {
+		docker: "rocker/tidyverse:4"
+	}
 }
