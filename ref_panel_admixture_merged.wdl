@@ -166,17 +166,30 @@ task plot_admixture {
     input {
         File ancestry_frac
         File proj_fam
+        File ref_pop
     }
 
 	command <<<
         Rscript -e "\
         library(tidyverse); \
         library(RColorBrewer); \
+
         fam <- read_table('~{proj_fam}', col_names=FALSE); \
         target_ids <- fam[[2]]; \
+
+        pop <- read_table('~{ref_pop}', col_names=c('sample_id','POP')); \
+
         dat <- read_delim('~{ancestry_frac}', col_names=FALSE); \
         K <- ncol(dat) - 1; \
         names(dat) <- c('sample_id', paste0('K', 1:K)); \
+
+        dat_full <- left_join(dat, pop, by='sample_id'); \
+        cluster_means <- dat_full %>% \
+            filter(POP != '-') %>% \
+            group_by(POP) %>% \
+            summarise(across(starts_with('K'), mean)); \
+        write.table(cluster_means, 'cluster_means.txt', quote=FALSE, row.names=FALSE, col.names=TRUE, sep='\t'); \
+
         dat <- dat %>% filter(sample_id %in% target_ids); \
         dat <- arrange(dat, across(starts_with('K'))); \
         dat <- mutate(dat, n=row_number()); \
@@ -195,6 +208,7 @@ task plot_admixture {
 
 	output {
 		File plot = "admixture_plot.png"
+        File cluster_means = "cluster_means.txt"
 	}
 
 	runtime {
