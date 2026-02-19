@@ -95,27 +95,24 @@ task merge {
         )
     ) + 20
 
-    String ref_prefix = basename(ref_bed, ".bed")
-    String proj_prefix = basename(proj_bed, ".bed")
-
     command <<<
         set -e -o pipefail
 
         plink \
-        --bfile ~{ref_prefix} \
-        --bmerge ~{proj_prefix}.bed ~{proj_prefix}.bim ~{proj_prefix}.fam \
+        --bed ~{ref_bed} --bim ~{ref_bim} --fam ~{ref_fam} \
+        --bmerge ~{proj_bed} ~{proj_bim} ~{proj_fam} \
         --make-bed \
-        --out merged
+        --out tmp
 
         plink \
-        --bfile merged \
+        --bfile tmp \
         --recode vcf-iid bgz \
-        --out merged
+        --out merged_combined
     >>>
 
     output {
-        File merged_vcf = "merged.vcf.gz"
-        File merged_fam = "merged.fam"
+        File merged_vcf = "merged_combined.vcf.gz"
+        File merged_fam = "merged_combined.fam"
     }
 
     runtime {
