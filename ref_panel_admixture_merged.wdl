@@ -68,6 +68,7 @@ workflow ref_panel_admixture_merged {
         input: 
             ancestry_frac = merged_admixture.ancestry_fractions,
             proj_fam = projected_admixture.fam
+            ref_pop = ref_pop
     }
     output {
         File ancestry_fractions = merged_admixture.ancestry_fractions
