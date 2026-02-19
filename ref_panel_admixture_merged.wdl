@@ -74,6 +74,7 @@ workflow ref_panel_admixture_merged {
         File ancestry_fractions = merged_admixture.ancestry_fractions
 		File allele_frequencies = merged_admixture.allele_frequencies
 		File plot = plot_admixture.plot
+        File cluster_means = plot_admixture.cluster_means
     }
 }
 
