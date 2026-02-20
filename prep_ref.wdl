@@ -4,14 +4,13 @@ import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projecti
 import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/sample_filtering.wdl" as sample_tasks
 import "https://raw.githubusercontent.com/PRIMED-Ancestry-Inference/PCA_projection/main/file_tasks.wdl" as file_tasks
 
-workflow basic_admixture {
+workflow prep_ref {
 	input {
 		Array[File] vcf
 		File? ref_variants
 		File? sample_file
-		File? pop
+		File pop
 		Int n_ancestral_populations
-		Boolean cross_validation = false
 		Int? genome_build
 		Boolean prune_variants = true
 		Boolean remove_relateds = true
@@ -87,31 +86,17 @@ workflow basic_admixture {
 	File final_bim = select_first([removeRelateds.out_bim, merged_bim])
 	File final_fam = select_first([removeRelateds.out_fam, merged_fam])
 
-	if (defined(pop)) {
-		call subset_pop {
-			input:
-				fam = final_fam,
-				pop = select_first([pop])
-		}
-	}
-	File? this_pop = if (defined(pop)) then subset_pop.out_pop else pop
-
-	call Admixture_t {
+	call subset_pop {
 		input:
-			bed = final_bed,
-			bim = final_bim,
 			fam = final_fam,
-			pop = this_pop,
-			n_ancestral_populations = n_ancestral_populations,
-			cross_validation = cross_validation
+			pop = select_first([pop])
 	}
 
 	output {
-		File ancestry_fractions = Admixture_t.ancestry_fractions
-		File allele_frequencies = Admixture_t.allele_frequencies
 		File bed = final_bed
 		File bim = final_bim
 		File fam = final_fam
+		File pop = subset_pop.out_pop
 	}
 }
 
@@ -161,50 +146,6 @@ task subset_pop {
 
 	runtime {
 		docker: "rocker/tidyverse:4"
-	}
-}
-
-
-task Admixture_t {
-	input {
-		File bed
-		File bim
-		File fam
-		File? pop
-		File? P # include this for use with projected_admixture
-		Int n_ancestral_populations
-		Boolean cross_validation = false
-		Int mem_gb = 16
-		Int n_cpus = 4
-	}
-
-	Int disk_size = ceil(1.5*(size(bed, "GB") + size(bim, "GB") + size(fam, "GB")))
-	String basename = basename(bed, ".bed")
-
-	command <<<
-		set -e -o pipefail
-		ln -s ~{bed} ~{basename}.bed
-		ln -s ~{bim} ~{basename}.bim
-		ln -s ~{fam} ~{basename}.fam
-		if [ -f ~{pop} ]; then ln -s ~{pop} ~{basename}.pop; fi
-		if [ -f ~{P} ]; then ln -s ~{P} ~{basename}.~{n_ancestral_populations}.P.in; fi
-		/admixture_linux-1.3.0/admixture ~{if defined(P) then "-P" else ""} ~{if cross_validation then "--cv" else ""} \
-			~{basename}.bed ~{n_ancestral_populations} ~{if defined(pop) then "--supervised" else ""} \
-			-j~{n_cpus}
-		paste -d' ' <(cut -f2 ~{basename}.fam) ~{basename}.~{n_ancestral_populations}.Q > ~{basename}.~{n_ancestral_populations}.ancestry_frac
-		paste -d' ' <(cut -f2 ~{basename}.bim) ~{basename}.~{n_ancestral_populations}.P > ~{basename}.~{n_ancestral_populations}.allele_freq
-	>>>
-
-	runtime {
-		docker: "us.gcr.io/broad-dsde-methods/admixture_docker:v1.0.0"
-		disks: "local-disk " + disk_size + " SSD"
-		memory: mem_gb + " GB"
-		cpu: n_cpus
-	}
-
-	output {
-		File ancestry_fractions = "~{basename}.~{n_ancestral_populations}.ancestry_frac"
-		File allele_frequencies = "~{basename}.~{n_ancestral_populations}.allele_freq"
 	}
 }
 

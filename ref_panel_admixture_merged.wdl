@@ -1,8 +1,8 @@
 version 1.0 
 
 import "https://raw.githubusercontent.com/UW-GAC/primed-bcftools/5243ee37ea5e360788a9ba43fe24cb83a27292bf/extract_vcf_ids.wdl" as extract_vcf_ids
-import "basic_admixture_merged.wdl" as basic_admixture
-import "projected_admixture_merged.wdl" as projected_admixture
+import "prep_ref.wdl" as prep_ref
+import "prep_target.wdl" as prep_target
 
 workflow ref_panel_admixture_merged {
     input {
@@ -11,6 +11,7 @@ workflow ref_panel_admixture_merged {
         Int n_ancestral_populations
         File? ref_sample
         File ref_pop
+        Boolean cross_validation = false
     }
 
     call extract_vcf_ids.extract_vcf_ids {
@@ -19,60 +20,61 @@ workflow ref_panel_admixture_merged {
         # output = variant_file
     }
 
-    call basic_admixture.basic_admixture {
+    call prep_ref.prep_ref {
         input:
             vcf = ref_vcf_file,
             ref_variants = extract_vcf_ids.variant_file,
             n_ancestral_populations = n_ancestral_populations,
             sample_file = ref_sample,
             pop = ref_pop
-        # output = ancestry_fractions, allele_frequencies, ancestry_plot, bed, bim, fam 
+        # output = bed, bim, fam, pop
     }
 
-    call projected_admixture.projected_admixture {
+    call prep_target.prep_target {
         input:
-            ref_allele_freq = basic_admixture.allele_frequencies,
+            ref_bim = prep_ref.bim,
 		    vcf = study_vcf_file
         # output: bed, bim, fam 
     }
 
     call merge {
         input: 
-            ref_bed = basic_admixture.bed,
-            ref_bim = basic_admixture.bim,
-            ref_fam = basic_admixture.fam,
+            ref_bed = prep_ref.bed,
+            ref_bim = prep_ref.bim,
+            ref_fam = prep_ref.fam,
 
-            proj_bed = projected_admixture.bed,
-            proj_bim = projected_admixture.bim,
-            proj_fam = projected_admixture.fam
-        # output: merged_fam, merged_vcf 
+            proj_bed = prep_target.bed,
+            proj_bim = prep_target.bim,
+            proj_fam = prep_target.fam
+        # output: merged_bed, merged_bim, merged_fam 
     }
 
     call make_merged_pop_file {
         input: 
             merged_fam = merge.merged_fam,
-            ref_ancestry_frac = basic_admixture.ancestry_fractions, 
-            ref_pop = ref_pop
+            ref_pop = prep_ref.pop
         # output sample_file, pop_file
     }
 
-    call basic_admixture.basic_admixture as merged_admixture {
-        input:
-            vcf = [merge.merged_vcf],
-            n_ancestral_populations = n_ancestral_populations,
-            pop = make_merged_pop_file.pop_file,
-            sample_file = make_merged_pop_file.sample_file
-    }
+    call Admixture_t {
+		input:
+			bed = merge.merged_bed,
+			bim = merge.merged_bim,
+			fam = merge.merged_fam,
+			pop = make_merged_pop_file.pop_file,
+			n_ancestral_populations = n_ancestral_populations,
+			cross_validation = cross_validation
+	}
 
     call plot_admixture {
         input: 
-            ancestry_frac = merged_admixture.ancestry_fractions,
-            proj_fam = projected_admixture.fam,
-            ref_pop = ref_pop
+            ancestry_frac = Admixture_t.ancestry_fractions,
+            proj_fam = prep_target.fam,
+            ref_pop = prep_ref.pop
     }
     output {
-        File ancestry_fractions = merged_admixture.ancestry_fractions
-		File allele_frequencies = merged_admixture.allele_frequencies
+        File ancestry_fractions = Admixture_t.ancestry_fractions
+		File allele_frequencies = Admixture_t.allele_frequencies
 		File plot = plot_admixture.plot
         File cluster_means = plot_admixture.cluster_means
     }
@@ -111,14 +113,16 @@ task merge {
         --make-bed \
         --out tmp
 
-        plink \
-        --bfile tmp \
-        --recode vcf-iid bgz \
-        --out merged_combined
+        #plink \
+        #--bfile tmp \
+        #--recode vcf-iid bgz \
+        #--out merged_combined
     >>>
 
     output {
-        File merged_vcf = "merged_combined.vcf.gz"
+        #File merged_vcf = "merged_combined.vcf.gz"
+        File merged_bed = "tmp.bed"
+        File merged_bim = "tmp.bim"
         File merged_fam = "tmp.fam"
     }
 
@@ -132,7 +136,6 @@ task merge {
 task make_merged_pop_file {
   input {
     File merged_fam
-    File ref_ancestry_frac
     File ref_pop
   }
 
@@ -215,5 +218,48 @@ task plot_admixture {
 
 	runtime {
 		docker: "rocker/tidyverse:4"
+	}
+}
+
+task Admixture_t {
+	input {
+		File bed
+		File bim
+		File fam
+		File? pop
+		File? P # include this for use with projected_admixture
+		Int n_ancestral_populations
+		Boolean cross_validation = false
+		Int mem_gb = 16
+		Int n_cpus = 4
+	}
+
+	Int disk_size = ceil(1.5*(size(bed, "GB") + size(bim, "GB") + size(fam, "GB")))
+	String basename = basename(bed, ".bed")
+
+	command <<<
+		set -e -o pipefail
+		ln -s ~{bed} ~{basename}.bed
+		ln -s ~{bim} ~{basename}.bim
+		ln -s ~{fam} ~{basename}.fam
+		if [ -f ~{pop} ]; then ln -s ~{pop} ~{basename}.pop; fi
+		if [ -f ~{P} ]; then ln -s ~{P} ~{basename}.~{n_ancestral_populations}.P.in; fi
+		/admixture_linux-1.3.0/admixture ~{if defined(P) then "-P" else ""} ~{if cross_validation then "--cv" else ""} \
+			~{basename}.bed ~{n_ancestral_populations} ~{if defined(pop) then "--supervised" else ""} \
+			-j~{n_cpus}
+		paste -d' ' <(cut -f2 ~{basename}.fam) ~{basename}.~{n_ancestral_populations}.Q > ~{basename}.~{n_ancestral_populations}.ancestry_frac
+		paste -d' ' <(cut -f2 ~{basename}.bim) ~{basename}.~{n_ancestral_populations}.P > ~{basename}.~{n_ancestral_populations}.allele_freq
+	>>>
+
+	runtime {
+		docker: "us.gcr.io/broad-dsde-methods/admixture_docker:v1.0.0"
+		disks: "local-disk " + disk_size + " SSD"
+		memory: mem_gb + " GB"
+		cpu: n_cpus
+	}
+
+	output {
+		File ancestry_fractions = "~{basename}.~{n_ancestral_populations}.ancestry_frac"
+		File allele_frequencies = "~{basename}.~{n_ancestral_populations}.allele_freq"
 	}
 }
