@@ -27,7 +27,7 @@ workflow ref_panel_admixture_merged {
             n_ancestral_populations = n_ancestral_populations,
             sample_file = ref_sample,
             pop = ref_pop
-        # output = bed, bim, fam, pop
+        # output = bed, bim, fam, ref_pop
     }
 
     call prep_target.prep_target {
@@ -52,7 +52,7 @@ workflow ref_panel_admixture_merged {
     call make_merged_pop_file {
         input: 
             merged_fam = merge.merged_fam,
-            ref_pop = prep_ref.pop
+            ref_pop = prep_ref.ref_pop
         # output sample_file, pop_file
     }
 
@@ -70,7 +70,7 @@ workflow ref_panel_admixture_merged {
         input: 
             ancestry_frac = Admixture_t.ancestry_fractions,
             proj_fam = prep_target.fam,
-            ref_pop = prep_ref.pop
+            ref_pop = prep_ref.ref_pop
     }
     output {
         File ancestry_fractions = Admixture_t.ancestry_fractions

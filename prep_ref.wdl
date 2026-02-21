@@ -96,7 +96,7 @@ workflow prep_ref {
 		File bed = final_bed
 		File bim = final_bim
 		File fam = final_fam
-		File pop = subset_pop.out_pop
+		File ref_pop = subset_pop.out_pop
 	}
 }
 
