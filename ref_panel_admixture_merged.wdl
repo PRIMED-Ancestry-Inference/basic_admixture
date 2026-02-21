@@ -238,18 +238,18 @@ task Admixture_t {
 	String basename = basename(bed, ".bed")
 
 	command <<<
-		set -e -o pipefail
-		ln -s ~{bed} ~{basename}.bed
-		ln -s ~{bim} ~{basename}.bim
-		ln -s ~{fam} ~{basename}.fam
-		if [ -f ~{pop} ]; then ln -s ~{pop} ~{basename}.pop.full; fi
+        set -e -o pipefail
+        ln -s ~{bed} ~{basename}.bed
+        ln -s ~{bim} ~{basename}.bim
+        ln -s ~{fam} ~{basename}.fam
+        if [ -f ~{pop} ]; then ln -s ~{pop} ~{basename}.pop.full; fi
         cut -f2 ~{basename}.pop.full > ~{basename}.pop
-		if [ -f ~{P} ]; then ln -s ~{P} ~{basename}.~{n_ancestral_populations}.P.in; fi
-		/admixture_linux-1.3.0/admixture ~{if defined(P) then "-P" else ""} ~{if cross_validation then "--cv" else ""} \
-			~{basename}.bed ~{n_ancestral_populations} ~{if defined(pop) then "--supervised" else ""} \
-			-j~{n_cpus}
-		paste -d' ' <(cut -f2 ~{basename}.fam) ~{basename}.~{n_ancestral_populations}.Q > ~{basename}.~{n_ancestral_populations}.ancestry_frac
-		paste -d' ' <(cut -f2 ~{basename}.bim) ~{basename}.~{n_ancestral_populations}.P > ~{basename}.~{n_ancestral_populations}.allele_freq
+        if [ -f ~{P} ]; then ln -s ~{P} ~{basename}.~{n_ancestral_populations}.P.in; fi
+        /admixture_linux-1.3.0/admixture ~{if defined(P) then "-P" else ""} ~{if cross_validation then "--cv" else ""} \
+            ~{basename}.bed ~{n_ancestral_populations} ~{if defined(pop) then "--supervised" else ""} \
+            -j~{n_cpus}
+        paste -d' ' <(cut -f2 ~{basename}.fam) ~{basename}.~{n_ancestral_populations}.Q > ~{basename}.~{n_ancestral_populations}.ancestry_frac
+        paste -d' ' <(cut -f2 ~{basename}.bim) ~{basename}.~{n_ancestral_populations}.P > ~{basename}.~{n_ancestral_populations}.allele_freq
 	>>>
 
 	runtime {
