@@ -136,7 +136,7 @@ task subset_pop {
 		dat <- read_delim('~{pop}', col_names=c('id', 'pop')); \
 		dat <- left_join(fam, dat); \
 		dat <- mutate(dat, pop=ifelse(is.na(pop), '-', pop)); \
-		writeLines(dat[['pop']], '~{outfile}'); \
+		writeLines(dat, '~{outfile}'); \
 		"
 	>>>
 
