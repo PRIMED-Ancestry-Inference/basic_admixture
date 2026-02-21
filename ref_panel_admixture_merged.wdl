@@ -222,22 +222,22 @@ task plot_admixture {
 }
 
 task Admixture_t {
-	input {
-		File bed
-		File bim
-		File fam
-		File? pop # two column, ID and pop
-		File? P # include this for use with projected_admixture
-		Int n_ancestral_populations
-		Boolean cross_validation = false
-		Int mem_gb = 16
-		Int n_cpus = 4
-	}
-
-	Int disk_size = ceil(1.5*(size(bed, "GB") + size(bim, "GB") + size(fam, "GB")))
-	String basename = basename(bed, ".bed")
-
-	command <<<
+    input {
+        File bed
+        File bim
+        File fam
+        File? pop # two column, ID and pop
+        File? P # include this for use with projected_admixture
+        Int n_ancestral_populations
+        Boolean cross_validation = false
+        Int mem_gb = 16
+        Int n_cpus = 4
+    }
+    
+    Int disk_size = ceil(1.5*(size(bed, "GB") + size(bim, "GB") + size(fam, "GB")))
+    String basename = basename(bed, ".bed")
+    
+    command <<<
         set -e -o pipefail
         ln -s ~{bed} ~{basename}.bed
         ln -s ~{bim} ~{basename}.bim
@@ -250,17 +250,17 @@ task Admixture_t {
             -j~{n_cpus}
         paste -d' ' <(cut -f2 ~{basename}.fam) ~{basename}.~{n_ancestral_populations}.Q > ~{basename}.~{n_ancestral_populations}.ancestry_frac
         paste -d' ' <(cut -f2 ~{basename}.bim) ~{basename}.~{n_ancestral_populations}.P > ~{basename}.~{n_ancestral_populations}.allele_freq
-	>>>
-
-	runtime {
-		docker: "us.gcr.io/broad-dsde-methods/admixture_docker:v1.0.0"
-		disks: "local-disk " + disk_size + " SSD"
-		memory: mem_gb + " GB"
-		cpu: n_cpus
-	}
-
-	output {
-		File ancestry_fractions = "~{basename}.~{n_ancestral_populations}.ancestry_frac"
-		File allele_frequencies = "~{basename}.~{n_ancestral_populations}.allele_freq"
-	}
+    >>>
+    
+    runtime {
+        docker: "us.gcr.io/broad-dsde-methods/admixture_docker:v1.0.0"
+        disks: "local-disk " + disk_size + " SSD"
+        memory: mem_gb + " GB"
+        cpu: n_cpus
+        }
+        
+    output {
+        File ancestry_fractions = "~{basename}.~{n_ancestral_populations}.ancestry_frac"
+        File allele_frequencies = "~{basename}.~{n_ancestral_populations}.allele_freq"
+    }
 }
