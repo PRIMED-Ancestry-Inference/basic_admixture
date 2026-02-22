@@ -6,7 +6,7 @@ import "prep_target.wdl" as prep_target
 
 workflow ref_panel_admixture_merged {
     input {
-        Array[File] study_vcf_file
+        Array[File] target_vcf_file
         Array[File] ref_vcf_file
         Int n_ancestral_populations
         File? ref_sample
@@ -33,7 +33,7 @@ workflow ref_panel_admixture_merged {
     call prep_target.prep_target {
         input:
             ref_bim = prep_ref.bim,
-		    vcf = study_vcf_file
+		    vcf = target_vcf_file
         # output: bed, bim, fam 
     }
 
@@ -43,9 +43,9 @@ workflow ref_panel_admixture_merged {
             ref_bim = prep_ref.bim,
             ref_fam = prep_ref.fam,
 
-            proj_bed = prep_target.bed,
-            proj_bim = prep_target.bim,
-            proj_fam = prep_target.fam
+            target_bed = prep_target.bed,
+            target_bim = prep_target.bim,
+            target_fam = prep_target.fam
         # output: merged_bed, merged_bim, merged_fam 
     }
 
@@ -64,12 +64,13 @@ workflow ref_panel_admixture_merged {
 			pop = make_merged_pop_file.pop_file,
 			n_ancestral_populations = n_ancestral_populations,
 			cross_validation = cross_validation
+        # output: ancestry_fractions, allele_frequencies
 	}
 
     call plot_admixture {
         input: 
             ancestry_frac = Admixture_t.ancestry_fractions,
-            proj_fam = prep_target.fam,
+            target_fam = prep_target.fam,
             ref_pop = prep_ref.ref_pop
     }
     output {
@@ -86,9 +87,9 @@ task merge {
         File ref_bim
         File ref_fam
 
-        File proj_bed
-        File proj_bim
-        File proj_fam
+        File target_bed
+        File target_bim
+        File target_fam
 
         Int mem_gb = 16
     }
@@ -98,9 +99,9 @@ task merge {
             size(ref_bed, "GB") +
             size(ref_bim, "GB") +
             size(ref_fam, "GB") +
-            size(proj_bed, "GB") +
-            size(proj_bim, "GB") +
-            size(proj_fam, "GB")
+            size(target_bed, "GB") +
+            size(target_bim, "GB") +
+            size(target_fam, "GB")
         )
     ) + 20
 
@@ -109,7 +110,7 @@ task merge {
 
         plink \
         --bed ~{ref_bed} --bim ~{ref_bim} --fam ~{ref_fam} \
-        --bmerge ~{proj_bed} ~{proj_bim} ~{proj_fam} \
+        --bmerge ~{target_bed} ~{target_bim} ~{target_fam} \
         --make-bed \
         --out tmp
 
@@ -153,15 +154,15 @@ task make_merged_pop_file {
         pop <- left_join(sample_tmp, pop_tmp, by = 'IID') %>% mutate(POP = if_else(is.na(POP), '-', POP))
 
         #write.table(sample, 'sample_file.txt', quote=F, row.names=F, col.names=F)
-        #write.table(pop, 'pop_file.txt', quote=F, row.names=F, col.names=F)
-        writeLines(pop[['POP']], 'pop_file.txt')
+        #write.table(pop, 'pop_file_plotting.txt', quote=F, row.names=F, col.names=F)
+        writeLines(pop[['POP']], 'merged.pop')
         RSCRIPT
     >>>
 
   output {
     #File sample_file = "sample_file.txt"
-    #File pop_file = "pop_file.txt"
-    File pop_file = "pop_file.txt"
+    #File pop_file_plotting = "pop_file_plotting.txt"
+    File pop_file = "merged.pop"
   }
 
   runtime {
@@ -169,66 +170,12 @@ task make_merged_pop_file {
   }
 }
 
-task plot_admixture {
-    input {
-        File ancestry_frac
-        File proj_fam
-        File ref_pop
-    }
-
-	command <<<
-        Rscript -e "\
-        library(tidyverse); \
-        library(RColorBrewer); \
-
-        fam <- read_table('~{proj_fam}', col_names=FALSE); \
-        target_ids <- fam[[2]]; \
-
-        pop <- read_table('~{ref_pop}', col_names=c('sample_id','POP')); \
-
-        dat <- read_delim('~{ancestry_frac}', col_names=FALSE); \
-        K <- ncol(dat) - 1; \
-        names(dat) <- c('sample_id', paste0('K', 1:K)); \
-
-        dat_full <- left_join(dat, pop, by='sample_id'); \
-        cluster_means <- dat_full %>% \
-            filter(POP != '-') %>% \
-            group_by(POP) %>% \
-            summarise(across(starts_with('K'), mean)); \
-        write.table(cluster_means, 'cluster_means.txt', quote=FALSE, row.names=FALSE, col.names=TRUE, sep='\t'); \
-
-        dat <- dat %>% filter(sample_id %in% target_ids); \
-        dat <- arrange(dat, across(starts_with('K'))); \
-        dat <- mutate(dat, n=row_number()); \
-        dat <- pivot_longer(dat, starts_with('K'), names_to='Cluster', values_to='K'); \
-        d2 <- brewer.pal(8, 'Dark2'); s2 <- brewer.pal(8, 'Set2'); \
-        colormap <- setNames(c(d2, s2)[1:K], paste0('K', 1:K)); \
-        ggbar <- ggplot(dat, aes(x=n, y=K, fill=Cluster, color=Cluster)) + \
-        geom_bar(stat='identity') + \
-        scale_fill_manual(values=colormap, breaks=rev(names(colormap))) + \
-        scale_color_manual(values=colormap, breaks=rev(names(colormap))) + \
-        theme_classic() + \
-        theme(axis.line=element_blank(), axis.ticks.x=element_blank(), axis.text.x=element_blank(), axis.title.x=element_blank(), axis.ticks.y=element_blank(), axis.text.y=element_blank(), axis.title.y=element_blank(), panel.spacing=unit(0, 'in')); \
-        ggsave('admixture_plot.png', width=11, height=4); \
-        "
-	>>>
-
-	output {
-		File plot = "admixture_plot.png"
-        File cluster_means = "cluster_means.txt"
-	}
-
-	runtime {
-		docker: "rocker/tidyverse:4"
-	}
-}
-
 task Admixture_t {
     input {
         File bed
         File bim
         File fam
-        File? pop # two column, ID and pop
+        File? pop
         File? P # include this for use with projected_admixture
         Int n_ancestral_populations
         Boolean cross_validation = false
@@ -264,4 +211,58 @@ task Admixture_t {
         File ancestry_fractions = "~{basename}.~{n_ancestral_populations}.ancestry_frac"
         File allele_frequencies = "~{basename}.~{n_ancestral_populations}.allele_freq"
     }
+}
+
+task plot_admixture {
+    input {
+        File ancestry_frac
+        File target_fam
+        File ref_pop
+    }
+
+	command <<<
+        Rscript -e "\
+        library(tidyverse); \
+        library(RColorBrewer); \
+
+        fam <- read_table('~{target_fam}', col_names=FALSE); \
+        target_ids <- fam[[2]]; \
+
+        pop <- read_table('~{ref_pop}', col_names=c('sample_id','POP')); \
+
+        dat <- read_delim('~{ancestry_frac}', col_names=FALSE); \
+        K <- ncol(dat) - 1; \
+        names(dat) <- c('sample_id', paste0('K', 1:K)); \
+
+        dat_ref <- left_join(dat, pop, by='sample_id'); \
+        cluster_means <- dat_ref %>% \
+            filter(POP != '-') %>% \
+            group_by(POP) %>% \
+            summarise(across(starts_with('K'), mean)); \
+        write.table(cluster_means, 'cluster_means.txt', quote=FALSE, row.names=FALSE, col.names=TRUE, sep='\t'); \
+
+        dat <- dat %>% filter(sample_id %in% target_ids); \
+        dat <- arrange(dat, across(starts_with('K'))); \
+        dat <- mutate(dat, n=row_number()); \
+        dat <- pivot_longer(dat, starts_with('K'), names_to='Cluster', values_to='K'); \
+        d2 <- brewer.pal(8, 'Dark2'); s2 <- brewer.pal(8, 'Set2'); \
+        colormap <- setNames(c(d2, s2)[1:K], paste0('K', 1:K)); \
+        ggbar <- ggplot(dat, aes(x=n, y=K, fill=Cluster, color=Cluster)) + \
+        geom_bar(stat='identity') + \
+        scale_fill_manual(values=colormap, breaks=rev(names(colormap))) + \
+        scale_color_manual(values=colormap, breaks=rev(names(colormap))) + \
+        theme_classic() + \
+        theme(axis.line=element_blank(), axis.ticks.x=element_blank(), axis.text.x=element_blank(), axis.title.x=element_blank(), axis.ticks.y=element_blank(), axis.text.y=element_blank(), axis.title.y=element_blank(), panel.spacing=unit(0, 'in')); \
+        ggsave('admixture_plot.png', width=11, height=4); \
+        "
+	>>>
+
+	output {
+		File plot = "admixture_plot.png"
+        File cluster_means = "cluster_means.txt"
+	}
+
+	runtime {
+		docker: "rocker/tidyverse:4"
+	}
 }
