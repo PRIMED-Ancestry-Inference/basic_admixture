@@ -53,7 +53,7 @@ workflow ref_panel_admixture_merged {
         input: 
             merged_fam = merge.merged_fam,
             ref_pop = prep_ref.ref_pop
-        # output sample_file, pop_file
+        # output pop_file
     }
 
     call Admixture_t {
@@ -152,13 +152,15 @@ task make_merged_pop_file {
         #left join sample and pop, fill in blanks with "-"
         pop <- left_join(sample_tmp, pop_tmp, by = 'IID') %>% mutate(POP = if_else(is.na(POP), '-', POP))
 
-        write.table(sample, 'sample_file.txt', quote=F, row.names=F, col.names=F)
-        write.table(pop, 'pop_file.txt', quote=F, row.names=F, col.names=F)
+        #write.table(sample, 'sample_file.txt', quote=F, row.names=F, col.names=F)
+        #write.table(pop, 'pop_file.txt', quote=F, row.names=F, col.names=F)
+        writeLines(pop[['POP']], 'pop_file.txt')
         RSCRIPT
     >>>
 
   output {
-    File sample_file = "sample_file.txt"
+    #File sample_file = "sample_file.txt"
+    #File pop_file = "pop_file.txt"
     File pop_file = "pop_file.txt"
   }
 
@@ -242,8 +244,7 @@ task Admixture_t {
         ln -s ~{bed} ~{basename}.bed
         ln -s ~{bim} ~{basename}.bim
         ln -s ~{fam} ~{basename}.fam
-        if [ -f ~{pop} ]; then ln -s ~{pop} ~{basename}.pop.full; fi
-        cut -f2 ~{basename}.pop.full > ~{basename}.pop
+        if [ -f ~{pop} ]; then ln -s ~{pop} ~{basename}.pop; fi
         if [ -f ~{P} ]; then ln -s ~{P} ~{basename}.~{n_ancestral_populations}.P.in; fi
         /admixture_linux-1.3.0/admixture ~{if defined(P) then "-P" else ""} ~{if cross_validation then "--cv" else ""} \
             ~{basename}.bed ~{n_ancestral_populations} ~{if defined(pop) then "--supervised" else ""} \
