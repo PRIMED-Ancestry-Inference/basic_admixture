@@ -16,7 +16,7 @@ workflow ref_panel_admixture_merged {
 
     call extract_vcf_ids.extract_vcf_ids {
         input:
-            vcf_file = study_vcf_file
+            vcf_file = target_vcf_file
         # output = variant_file
     }
 
