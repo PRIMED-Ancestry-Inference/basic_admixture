@@ -196,8 +196,11 @@ task Admixture_t {
         /admixture_linux-1.3.0/admixture ~{if defined(P) then "-P" else ""} ~{if cross_validation then "--cv" else ""} \
             ~{basename}.bed ~{n_ancestral_populations} ~{if defined(pop) then "--supervised" else ""} \
             -j~{n_cpus}
-        paste -d' ' <(cut -f2 ~{basename}.fam) ~{basename}.~{n_ancestral_populations}.Q > ~{basename}.~{n_ancestral_populations}.ancestry_frac
-        paste -d' ' <(cut -f2 ~{basename}.bim) ~{basename}.~{n_ancestral_populations}.P > ~{basename}.~{n_ancestral_populations}.allele_freq
+        awk '{print $2}' ~{basename}.fam > iid.txt
+        paste -d' ' iid.txt ~{basename}.~{n_ancestral_populations}.Q > ~{basename}.~{n_ancestral_populations}.ancestry_frac
+        awk '{print $2}' ~{basename}.bim > snp.txt
+        paste -d' ' snp.txt ~{basename}.~{n_ancestral_populations}.P > ~{basename}.~{n_ancestral_populations}.allele_freq
+        rm iid.txt snp.txt
     >>>
     
     runtime {
