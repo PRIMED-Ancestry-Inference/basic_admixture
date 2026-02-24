@@ -9,7 +9,7 @@ workflow prep_target {
 		File ref_bim
 		Array[File] vcf
 		Boolean remove_relateds = true
-		Float? max_kinship_coefficient
+		Int kinship_degree_filter = 3
 		Int mem_gb = 16
 	}
 
@@ -43,19 +43,36 @@ workflow prep_target {
 	File merged_fam = select_first([mergeFiles.out_fam, subsetVariants.subset_fam[0]])
 
 	if (remove_relateds) {
-		call sample_tasks.removeRelateds {
-			input:
+		call sample_tasks.king_ibdseg {
+			input: 
 				bed = merged_bed,
 				bim = merged_bim,
 				fam = merged_fam,
-				max_kinship_coefficient = max_kinship_coefficient,
-				output_chr = "26"
+				degree = kinship_degree_filter
+		}
+
+		call sample_tasks.findRelated {
+			input: 
+				king_file = king_ibdseg.kin0, 
+				estimator = "ibdseg", 
+				degree = kinship_degree_filter
+		}
+
+		if (findRelated.has_relatives) {
+			call sample_tasks.removeSamples {
+				input: 
+				bed = merged_bed,
+				bim = merged_bim,
+				fam = merged_fam,
+				samples_to_remove = findRelated.related_samples,
+				suffix = "unrel"
+			}
 		}
 	}
 
-	File final_bed = select_first([removeRelateds.out_bed, merged_bed])
-	File final_bim = select_first([removeRelateds.out_bim, merged_bim])
-	File final_fam = select_first([removeRelateds.out_fam, merged_fam])
+	File final_bed = select_first([removeSamples.out_bed, merged_bed])
+	File final_bim = select_first([removeSamples.out_bim, merged_bim])
+	File final_fam = select_first([removeSamples.out_fam, merged_fam])
 
 	output {
 		File bed = final_bed
