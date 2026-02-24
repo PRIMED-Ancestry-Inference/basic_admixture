@@ -59,7 +59,7 @@ workflow prep_target {
 		}
 
 		if (findRelated.has_relatives) {
-			call sample_tasks.removeSamples {
+			call removeSamples {
 				input: 
 				bed = merged_bed,
 				bim = merged_bim,
@@ -99,4 +99,40 @@ task selectColumn {
 	runtime {
 		docker: "us.gcr.io/broad-dsp-gcr-public/anvil-rstudio-bioconductor:3.17.0"
 	}
+}
+
+task removeSamples {
+    input {
+        File bed
+        File bim
+        File fam
+        File samples_to_remove
+        String suffix = "subset"
+        Int mem_gb = 16
+    }
+
+    Int disk_size = ceil(1.5*(size(bed, "GB") + size(bim, "GB") + size(fam, "GB"))) + 10
+    String basename = basename(bed, ".bed")
+
+    command <<<
+        command="plink2 --bed ~{bed} --bim ~{bim} --fam ~{fam} \
+        --remove ~{samples_to_remove} \
+        --output-chr chrM \
+        --make-bed \
+        --out ~{basename}_~{suffix}"
+        printf "${command}\n"
+        ${command}
+    >>>
+
+    output {
+        File out_bed="~{basename}_~{suffix}.bed"
+        File out_bim="~{basename}_~{suffix}.bim"
+        File out_fam="~{basename}_~{suffix}.fam"
+    }
+
+    runtime {
+        docker: "quay.io/biocontainers/plink2:2.00a5.12--h4ac6f70_0"
+        disks: "local-disk " + disk_size + " SSD"
+        memory: mem_gb + " GB"
+    }
 }
