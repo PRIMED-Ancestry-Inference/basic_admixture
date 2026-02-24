@@ -54,7 +54,7 @@ workflow prep_target {
 		call sample_tasks.findRelated {
 			input: 
 				king_file = king_ibdseg.kin0, 
-				estimator = "ibdseg", 
+				estimator = "PropIBD", 
 				degree = kinship_degree_filter
 		}
 
