@@ -248,8 +248,8 @@ task plot_admixture {
         dat <- arrange(dat, across(starts_with('K'))); \
         dat <- mutate(dat, n=row_number()); \
         dat <- pivot_longer(dat, starts_with('K'), names_to='Cluster', values_to='K'); \
-        d2 <- brewer.pal(8, 'Dark2'); s2 <- brewer.pal(8, 'Set2'); \
-        colormap <- setNames(c(d2, s2)[1:K], paste0('K', 1:K)); \
+        d2 <- brewer.pal(8, 'Dark2'); s1 <- brewer.pal(8, 'Set1'); \
+        colormap <- setNames(c(s1, d2)[1:K], paste0('K', 1:K)); \
         ggbar <- ggplot(dat, aes(x=n, y=K, fill=Cluster, color=Cluster)) + \
         geom_bar(stat='identity') + \
         scale_fill_manual(values=colormap, breaks=rev(names(colormap))) + \
