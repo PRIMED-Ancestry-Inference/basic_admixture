@@ -245,9 +245,11 @@ task plot_admixture {
         write.table(cluster_means, 'cluster_means.txt', quote=FALSE, row.names=FALSE, col.names=TRUE, sep='\t'); \
 
         dat <- dat %>% filter(sample_id %in% target_ids); \
-        dat <- arrange(dat, across(starts_with('K'))); \
+        cluster_order <- dat %>% select(-sample_id) %>% colSums() %>% sort(decreasing = TRUE) %>% names(); \
+        dat <- dat %>% arrange(across(all_of(cluster_order))); \
         dat <- mutate(dat, n=row_number()); \
-        dat <- pivot_longer(dat, starts_with('K'), names_to='Cluster', values_to='K'); \
+        dat <- dat %>% pivot_longer(cols = all_of(cluster_order), names_to='Cluster', values_to='K'); \
+        dat[['Cluster']] <- factor(dat[['Cluster']], levels = cluster_order); \
         d2 <- brewer.pal(8, 'Dark2'); s1 <- brewer.pal(8, 'Set1'); \
         colormap <- setNames(c(s1, d2)[1:K], paste0('K', 1:K)); \
         ggbar <- ggplot(dat, aes(x=n, y=K, fill=Cluster, color=Cluster)) + \
