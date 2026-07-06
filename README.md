@@ -70,6 +70,15 @@ input | description
 study_vcf_file | Array of study VCF files (possibly split by chromosome)
 ref_vcf_file | Array of reference panel VCF files (possibly split by chromosome)
 n_ancestral_populations | number of clusters to infer
+pop | Optional file with known population labels. This should be a two-column file in the format "id pop". If this file is provided, ADMIXTURE is run in supervised mode; otherwise, the clustering is unsupervised.
+cross_validation | Boolean for whether to run cross-validation (default false)
+prune_variants | Boolean for whether to do LD pruning on the variants (default true)
+min_maf | minimum MAF for variants to include (optional)
+remove_relateds | Boolean for whether to remove samples with relatedness above max_kinship_coefficient (default true)
+max_kinship_coefficient | if remove_relateds is true, remove one of each pair of samples with kinship > this value (default 0.0442 = 3rd degree relatives)
+window_size | window size for LD pruning (default 10,000)
+shift_size | shift size for LD pruning (default 1000)
+r2_threshold | r2 threshold for LD pruning (default 0.1)
 
 
 Outputs:
