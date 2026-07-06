@@ -10,6 +10,16 @@ workflow ref_panel_admixture{
         Array[File] ref_vcf_file
         Int n_ancestral_populations
         Int mem_gb = 16
+        File? pop
+        Boolean cross_validation = false
+        Int? genome_build
+        Boolean prune_variants = true
+        Boolean remove_relateds = true
+        Float? min_maf
+        Float? max_kinship_coefficient
+        Int? window_size
+        Int? shift_size
+        Float? r2_threshold
     }
 
     call extract_vcf_ids.extract_vcf_ids {
@@ -23,8 +33,17 @@ workflow ref_panel_admixture{
         input:
             vcf = ref_vcf_file,
             ref_variants = extract_vcf_ids.variant_file,
-            n_ancestral_populations = n_ancestral_populations
-
+            n_ancestral_populations = n_ancestral_populations,
+            pop = pop,
+            cross_validation = cross_validation,
+            genome_build = genome_build,
+            prune_variants = prune_variants,
+            remove_relateds = remove_relateds,
+            min_maf = min_maf,
+            max_kinship_coefficient = max_kinship_coefficient,
+            window_size = window_size,
+            shift_size = shift_size,
+            r2_threshold = r2_threshold
         # output = ancestry_fractions, allele_frequencies, ancestry_plot
     }
 
